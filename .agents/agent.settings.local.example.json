@@ -1,0 +1,10 @@
+{
+  "_comment": "Copia este archivo a 'agent.settings.local.json' (ignorado por Git) para sobreescribir tu alias o comandos locales sin afectar al resto del equipo.",
+  "developer": {
+    "active_alias": "nicolas"
+  },
+  "project": {
+    "stack_profile": "python"
+  }
+}
+

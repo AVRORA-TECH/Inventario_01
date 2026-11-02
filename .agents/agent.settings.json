@@ -1,0 +1,203 @@
+{
+  "_schema_version": "2.1.0",
+  "_description": "Configuracion universal de Ingenieria Asistida por IA (multi-proyecto y multi-lenguaje). Edita este archivo y ejecuta 'python .agents/sync_agent_config.py' para sincronizar AGENTS.md, CLAUDE.md y .github/copilot-instructions.md.",
+  "organization": {
+    "name": "Avrora Tech",
+    "website": "https://avroratech.vercel.app",
+    "country": "CO",
+    "currency": "COP",
+    "timezone": "America/Bogota",
+    "compliance_frameworks": [
+      "Proteccion de Datos Personales / PII (Ley 1581 Habeas Data / GDPR)",
+      "OWASP Top 10 & ASVS",
+      "NDA & Propiedad Intelectual del Cliente"
+    ]
+  },
+  "developer": {
+    "active_alias": "Diego",
+    "preferred_chat_language": "es",
+    "code_and_logs_language": "en",
+    "team_members": [
+      {
+        "name": "Diego Delgado",
+        "alias": "Diego",
+        "role": "Lead Engineer / Arquitectura, IA & Full-Stack"
+      },
+      {
+        "name": "Ingeniero Socio 2",
+        "alias": "dev2",
+        "role": "Backend, Automatizacion & Integraciones API"
+      },
+      {
+        "name": "Ingeniero Socio 3",
+        "alias": "dev3",
+        "role": "Frontend, UI/UX, Mobile & QA"
+      },
+      {
+        "name": "Ingeniero Socio 4",
+        "alias": "dev4",
+        "role": "Sistemas Embebidos, IoT, Cloud & Datos"
+      }
+    ]
+  },
+  "project": {
+    "name": "UNIVERSAL_PROJECT_TEMPLATE",
+    "language": "polyglot",
+    "stack_profile": "generic",
+    "entry_point": "src/main",
+    "spec_file": "PROJECT_SPEC.md",
+    "nucleo_file": "docs/bitacora/NUCLEO.md",
+    "bitacora_file": "docs/bitacora/BITACORA.md",
+    "backlog_file": "BACKLOG.md",
+    "use_external_issue_tracker": false,
+    "commands": {
+      "test": "pytest -q",
+      "lint": "ruff check .",
+      "format_check": "ruff format --check .",
+      "typecheck": "pyright",
+      "build": "python -m compileall -q ."
+    },
+    "language_presets": {
+      "python": {
+        "entry_point": "src/main.py",
+        "test": "pytest -q",
+        "lint": "ruff check .",
+        "format_check": "ruff format --check .",
+        "typecheck": "pyright",
+        "build": "python -m compileall -q ."
+      },
+      "node_ts": {
+        "entry_point": "src/index.ts",
+        "test": "npm test -- --watchAll=false",
+        "lint": "npm run lint",
+        "format_check": "npx prettier --check .",
+        "typecheck": "npx tsc --noEmit",
+        "build": "npm run build"
+      },
+      "go": {
+        "entry_point": "cmd/app/main.go",
+        "test": "go test ./...",
+        "lint": "golangci-lint run",
+        "format_check": "gofmt -l .",
+        "typecheck": "go vet ./...",
+        "build": "go build ./..."
+      },
+      "rust": {
+        "entry_point": "src/main.rs",
+        "test": "cargo test --quiet",
+        "lint": "cargo clippy -- -D warnings",
+        "format_check": "cargo fmt -- --check",
+        "typecheck": "cargo check",
+        "build": "cargo build"
+      },
+      "jvm": {
+        "entry_point": "src/main/java/App.java",
+        "test": "./gradlew test",
+        "lint": "./gradlew check",
+        "format_check": "./gradlew spotlessCheck",
+        "typecheck": "./gradlew compileJava",
+        "build": "./gradlew build -x test"
+      },
+      "dotnet": {
+        "entry_point": "src/Program.cs",
+        "test": "dotnet test --nologo",
+        "lint": "dotnet format --verify-no-changes",
+        "format_check": "dotnet format --verify-no-changes",
+        "typecheck": "dotnet build --no-restore",
+        "build": "dotnet build --nologo"
+      },
+      "cpp_embedded": {
+        "entry_point": "src/main.cpp",
+        "test": "ctest --output-on-failure",
+        "lint": "clang-tidy src/*",
+        "format_check": "clang-format --dry-run --Werror src/*",
+        "typecheck": "cmake --build build --target check",
+        "build": "cmake --build build"
+      }
+    }
+  },
+  "parallel_execution": {
+    "enabled": true,
+    "strategy": "coordinator-explorer-implementer-verifier",
+    "max_parallel_subagents": 4,
+    "min_independent_modules_for_fanout": 2,
+    "strict_disjoint_file_ownership": true,
+    "use_git_worktrees_for_parallel_ides": true,
+    "worktree_base_dir": "../worktrees"
+  },
+  "limits_and_budgets": {
+    "command_sync_wait_ms": 8000,
+    "subagent_timeout_sec": 240,
+    "test_suite_timeout_sec": 120,
+    "external_io_timeout_sec": 15,
+    "db_busy_timeout_ms": 30000,
+    "max_transient_retries": 2,
+    "backoff_base_seconds": 1.5,
+    "fail_fast_pivot_after_failures": 2,
+    "circuit_breaker_max_identical_calls": 3,
+    "root_instructions_max_lines": 180,
+    "nucleo_max_lines": 400,
+    "bitacora_tail_entries_to_load": 30,
+    "preferred_file_read_chunk_lines": 300,
+    "minimum_quality_score_out_of_10": 9.0
+  },
+  "git_and_backups": {
+    "protected_branches": [
+      "main",
+      "master",
+      "production"
+    ],
+    "branch_pattern": "{type}/{alias}-{slug}",
+    "allowed_commit_types": [
+      "feat",
+      "fix",
+      "refactor",
+      "perf",
+      "test",
+      "docs",
+      "chore",
+      "build",
+      "ci"
+    ],
+    "atomic_commits_only": true,
+    "require_green_tests_before_commit": true,
+    "backup_dir": ".backups",
+    "max_backups_retained": 10,
+    "sqlite_wal_checkpoint_before_backup": true,
+    "exclude_dirs": [
+      ".git",
+      ".backups",
+      ".venv",
+      "venv",
+      "node_modules",
+      "__pycache__",
+      ".pytest_cache",
+      ".ruff_cache",
+      ".mypy_cache",
+      "dist",
+      "build",
+      "target",
+      "bin",
+      "obj",
+      ".next",
+      ".nuxt",
+      "coverage"
+    ]
+  },
+  "security_guardrails": {
+    "immutable_files": [
+      ".env",
+      ".env.local",
+      ".env.development",
+      ".env.staging",
+      ".env.production",
+      ".env.test",
+      "vault.enc",
+      "license.json"
+    ],
+    "forbid_secret_exposure_in_logs_or_chat": true,
+    "redact_pii_before_persistence": true,
+    "require_human_confirmation_for_destructive_ops": true,
+    "bulk_delete_confirmation_threshold_rows": 100
+  }
+}

@@ -1,0 +1,38 @@
+name: Universal Quality & Security Gate
+
+on:
+  push:
+    branches: ["main", "master", "production"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+jobs:
+  agent-and-security-audit:
+    name: Validate Agent Config & Secret Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify no immutable secret files or backup archives are tracked
+        run: |
+          tracked_forbidden=$(git ls-files "**/.env" "**/.env.*" "**/*.pem" "**/*.key" "**/*.p12" ".backups/*.zip" | grep -E -v '\.env\.(example|sample|template|dist)$' || true)
+          if [ -n "$tracked_forbidden" ]; then
+            echo "::error::Forbidden secret or backup files tracked in Git:"
+            echo "$tracked_forbidden"
+            exit 1
+          fi
+
+      - name: Compile and validate .agents scripts
+        run: |
+          python -m py_compile .agents/sync_agent_config.py .agents/security_gate.py
+          python .agents/sync_agent_config.py
+

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refribreak Inventory Core (RIC) — Plataforma Integral de Control y Despacho</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation (Shopware inspired) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-badge">R</div>
+        <div class="brand-text">
+          <h1>REFRIBREAK</h1>
+          <span>Inventory Core • v1.0</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Operación Diaria</div>
+        <a class="nav-item active" data-view="dashboard" id="nav-dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Dashboard</span>
+        </a>
+
+        <a class="nav-item" data-view="inventory" id="nav-inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          <span>Inventario Core</span>
+        </a>
+
+        <a class="nav-item" data-view="orders" id="nav-orders">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          <span>Órdenes de Entrega (OE)</span>
+        </a>
+
+        <a class="nav-item" data-view="lots" id="nav-lots">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span>Lotes & FEFO</span>
+          <span class="nav-badge alert" id="navAlertBadge" style="display:none;">0</span>
+        </a>
+
+        <div class="nav-section-title">Control & Auditoría</div>
+        <a class="nav-item" data-view="kardex" id="nav-kardex">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Kardex / Movimientos</span>
+        </a>
+
+        <a class="nav-item" data-view="audit" id="nav-audit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Bitácora de Auditoría</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar">NS</div>
+        <div class="user-info">
+          <span class="user-name">Nicolas Santa</span>
+          <span class="user-role">Lead Engineer / Admin</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="main-wrapper">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <div class="search-pill-container">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="globalSearchInput" class="search-pill" placeholder="Buscar productos, SKUs, lotes u órdenes...">
+          </div>
+
+          <div class="warehouse-selector-wrapper">
+            <select id="globalWarehouseSelect" class="warehouse-select">
+              <option value="">Cargando sedes...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button class="btn btn-secondary" onclick="openModal('modalCreateOE')">
+            <span>📋</span> + Nueva Orden OE
+          </button>
+          <button class="btn btn-primary" onclick="openModal('modalPurchaseEntry')">
+            <span>📥</span> + Entrada por Compra
+          </button>
+        </div>
+      </header>
+
+      <!-- Dynamic Views Container -->
+      <main class="views-content">
+
+        <!-- 1. DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view-panel active">
+          <div class="view-title-row">
+            <div>
+              <h2>Panel de Control Operativo</h2>
+              <p>Métricas clave, valorización en tiempo real y alertas de vencimiento FEFO</p>
+            </div>
+            <div>
+              <span class="badge-pill badge-green">Sistema en Línea • SQLite WAL Activo</span>
+            </div>
+          </div>
+
+          <!-- Metrics Grid -->
+          <div class="metrics-grid">
+            <div class="metric-card success">
+              <div class="metric-header">
+                <span class="metric-title">Valorización de Inventario</span>
+                <div class="metric-icon">💰</div>
+              </div>
+              <div class="metric-value" id="metricTotalValue">$ 0</div>
+              <div class="metric-sub">Costo promedio ponderado activo</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Unidades Disponibles</span>
+                <div class="metric-icon">📦</div>
+              </div>
+              <div class="metric-value" id="metricTotalUnits">0</div>
+              <div class="metric-sub">En todas las sedes operativas</div>
+            </div>
+
+            <div class="metric-card warning">
+              <div class="metric-header">
+                <span class="metric-title">Lotes en Alerta FEFO (&lt; 7d)</span>
+                <div class="metric-icon">⚠️</div>
+              </div>
+              <div class="metric-value" id="metricExpiringCount">0</div>
+              <div class="metric-sub">Requieren rotación prioritaria</div>
+            </div>
+
+            <div class="metric-card danger">
+              <div class="metric-header">
+                <span class="metric-title">Productos Bajo Mínimo</span>
+                <div class="metric-icon">📉</div>
+              </div>
+              <div class="metric-value" id="metricCriticalStock">0</div>
+              <div class="metric-sub">Necesitan orden de compra</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Órdenes de Entrega Pendientes</span>
+                <div class="metric-icon">🚚</div>
+              </div>
+              <div class="metric-value" id="metricPendingOrders">0</div>
+              <div class="metric-sub">Listas para despacho o servidas</div>
+            </div>
+
+            <div class="metric-card danger">
+              <div class="metric-header">
+                <span class="metric-title">Mermas del Mes</span>
+                <div class="metric-icon">🗑️</div>
+              </div>
+              <div class="metric-value" id="metricMonthlyWaste">$ 0</div>
+              <div class="metric-sub">Bajas justificadas por vencimiento</div>
+            </div>
+          </div>
+
+          <!-- Expiring Alert Banner -->
+          <div class="alert-banner">
+            <div class="alert-banner-left">
+              <div class="alert-banner-icon">⏱️</div>
+              <div>
+                <h4>Protocolo de Rotación FEFO (First-Expired, First-Out)</h4>
+                <p>El sistema asigna y despacha automáticamente primero los lotes con fecha de vencimiento más cercana.</p>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="switchView('lots')">Ver Lotes Críticos</button>
+          </div>
+
+          <!-- Recent Critical Lots Table Card -->
+          <div class="card-table-container">
+            <div class="table-toolbar">
+              <strong>Lotes Próximos a Vencer (Atención Urgente)</strong>
+              <button class="btn btn-secondary btn-sm" onclick="switchView('lots')">Ver Todos los Lotes</button>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Lote</th>
+                    <th>Producto</th>
+                    <th>Sede / Bodega</th>
+                    <th>Remanente</th>
+                    <th>Estado de Vencimiento</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardAlertsList">
+                  <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando alertas...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. INVENTORY CORE VIEW (Sellerskills style) -->
+        <section id="view-inventory" class="view-panel">
+          <div class="view-title-row">
+            <div>
+              <h2>Catálogo e Inventario Central</h2>
+              <p>Existencias detalladas, costos promedio ponderados y semáforo FEFO</p>
+            </div>
+            <span class="badge-pill badge-gray" id="inventoryCountLabel">0 productos</span>
+          </div>
+
+          <div class="card-table-container">
+            <div class="table-toolbar">
+              <div class="toolbar-filters">
+                <input type="text" id="inventorySearchInput" class="form-input" style="width:240px; height:34px;" placeholder="Buscar en inventario...">
+                <select id="filterCategorySelect" class="filter-select">
+                  <option value="">Todas las Categorías</option>
+                </select>
+              </div>
+
+              <div>
+                <button class="btn btn-primary btn-sm" onclick="openModal('modalPurchaseEntry')">+ Entrada</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th width="30"><input type="checkbox"></th>
+                    <th>Producto</th>
+                    <th>SKU</th>
+                    <th>Categoría</th>
+                    <th>Disponible</th>
+                    <th>Reservado</th>
+                    <th>Costo Prom. Unit.</th>
+                    <th>Valorización Total</th>
+                    <th>Próximo Vencimiento</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryTableBody">
+                  <tr><td colspan="9" style="text-align:center; padding:28px;">Cargando inventario...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. ORDERS VIEW (OE) (Shopware style) -->
+        <section id="view-orders" class="view-panel">
+          <div class="view-title-row">
+            <div>
+              <h2>Órdenes de Entrega y Despacho (OE)</h2>
+              <p>Control de despachos corporativos, servicio de catering y remisiones de entrega</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('modalCreateOE')">+ Nueva Orden OE</button>
+          </div>
+
+          <div class="card-table-container">
+            <div class="table-toolbar">
+              <span id="ordersCountLabel" style="font-weight:600; font-size:13px;">0 órdenes</span>
+              <div class="toolbar-filters">
+                <button class="btn btn-secondary btn-sm" onclick="loadOrders()">Refrescar</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th width="30"><input type="checkbox"></th>
+                    <th>Consecutivo</th>
+                    <th>Empresa / Cliente</th>
+                    <th>Fecha & Horarios</th>
+                    <th>Servicio & Cantidad</th>
+                    <th>Estado</th>
+                    <th>Asesor</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                  <tr><td colspan="8" style="text-align:center; padding:28px;">Cargando órdenes...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. LOTS & FEFO VIEW -->
+        <section id="view-lots" class="view-panel">
+          <div class="view-title-row">
+            <div>
+              <h2>Control de Lotes y Trazabilidad FEFO</h2>
+              <p>Seguimiento de fechas de vencimiento, proveedor de origen y costos por lote</p>
+            </div>
+          </div>
+
+          <div class="card-table-container">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Número de Lote</th>
+                    <th>Producto</th>
+                    <th>Sede</th>
+                    <th>Proveedor</th>
+                    <th>Cantidad (Remanente / Inicial)</th>
+                    <th>Costo de Adquisición</th>
+                    <th>Vencimiento</th>
+                    <th>Estado FEFO</th>
+                  </tr>
+                </thead>
+                <tbody id="lotsTableBody">
+                  <tr><td colspan="8" style="text-align:center; padding:28px;">Cargando lotes...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. KARDEX VIEW -->
+        <section id="view-kardex" class="view-panel">
+          <div class="view-title-row">
+            <div>
+              <h2>Kardex y Movimientos</h2>
+              <p>Historial inmutable de entradas, salidas FEFO, transferencias y ajustes</p>
+            </div>
+          </div>
+
+          <div class="card-table-container">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Consecutivo</th>
+                    <th>Tipo de Movimiento</th>
+                    <th>Sede</th>
+                    <th>Operador</th>
+                    <th>Costo Total</th>
+                    <th>Referencia / Notas</th>
+                    <th>Fecha y Hora</th>
+                  </tr>
+                </thead>
+                <tbody id="kardexTableBody">
+                  <tr><td colspan="7" style="text-align:center; padding:28px;">Cargando kardex...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. AUDIT VIEW -->
+        <section id="view-audit" class="view-panel">
+          <div class="view-title-row">
+            <div>
+              <h2>Bitácora de Auditoría del Sistema</h2>
+              <p>Registro append-only de seguridad y trazabilidad de operaciones críticas</p>
+            </div>
+          </div>
+
+          <div class="card-table-container">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Fecha / Hora (ISO-8601)</th>
+                    <th>Usuario Responsable</th>
+                    <th>Acción</th>
+                    <th>Entidad</th>
+                    <th>Detalles Transaccionales</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                  <tr><td colspan="5" style="text-align:center; padding:28px;">Cargando bitácora de auditoría...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: ENTRADA POR COMPRA (Con Simulación de Extracción IA)
+       ========================================================================= -->
+  <div id="modalPurchaseEntry" class="modal-backdrop">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <h3>Registrar Entrada por Compra a Bodega</h3>
+        <button class="modal-close-btn" onclick="closeModal('modalPurchaseEntry')">&times;</button>
+      </div>
+      <form id="formPurchaseEntry">
+        <div class="modal-body">
+          <!-- AI Extraction Helper -->
+          <div class="ai-dropzone-box">
+            <h5>🤖 Agente de IA para Extracción de Facturas (Avrora Tech)</h5>
+            <p>Lee facturas de proveedor en PDF o imagen y autocompleta los campos con verificación humana obligatoria.</p>
+            <button type="button" id="btnRunAi" class="btn btn-ai btn-sm">⚡ Simular Extracción Factura IA</button>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Sede / Bodega de Recepción</label>
+              <select id="entryWarehouse" class="form-select" required></select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Proveedor</label>
+              <select id="entrySupplier" class="form-select"></select>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label class="form-label">Producto a Ingresar</label>
+              <select id="entryProduct" class="form-select" required></select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Número de Lote</label>
+              <input type="text" id="entryLot" class="form-input" placeholder="Ej: L-WRP-2611A" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha de Vencimiento (FEFO)</label>
+              <input type="date" id="entryExpDate" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Cantidad Recibida</label>
+              <input type="number" id="entryQty" class="form-input" step="0.1" min="0.1" placeholder="Ej: 50" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Costo Unitario de Adquisición (COP)</label>
+              <input type="number" id="entryCost" class="form-input" step="1" min="0" placeholder="Ej: 7500" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">No. Factura / Remisión Soporte</label>
+              <input type="text" id="entryDocRef" class="form-input" placeholder="Ej: FE-84512">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Observaciones</label>
+              <input type="text" id="entryNotes" class="form-input" placeholder="Inspección sensorial y cadena de frío OK">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalPurchaseEntry')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar Entrada y Recalcular Costo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: CREAR ORDEN DE ENTREGA (OE)
+       ========================================================================= -->
+  <div id="modalCreateOE" class="modal-backdrop">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <h3>Crear Nueva Orden de Entrega de Refrigerios (OE)</h3>
+        <button class="modal-close-btn" onclick="closeModal('modalCreateOE')">&times;</button>
+      </div>
+      <form id="formCreateOE">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group col-span-2">
+              <label class="form-label">Cliente Corporativo</label>
+              <select id="oeCustomer" class="form-select" required></select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Sede de Despacho</label>
+              <select id="oeWarehouse" class="form-select" required></select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Dirección de Entrega</label>
+              <input type="text" id="oeAddress" class="form-input" placeholder="Trv 23 97 -73 Ofc 212" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha de Entrega</label>
+              <input type="date" id="oeDeliveryDate" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Día de Entrega</label>
+              <select id="oeDayName" class="form-select" required>
+                <option value="Lunes">Lunes</option>
+                <option value="Martes">Martes</option>
+                <option value="Miércoles">Miércoles</option>
+                <option value="Jueves">Jueves</option>
+                <option value="Viernes" selected>Viernes</option>
+                <option value="Sábado">Sábado</option>
+                <option value="Domingo">Domingo</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Hora Salida Bodega</label>
+              <input type="text" id="oeDepartureTime" class="form-input" value="6:40 AM">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Hora Llegada al Cliente</label>
+              <input type="text" id="oeArrivalTime" class="form-input" value="7:30 AM">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Hora Inicio Servicio</label>
+              <input type="text" id="oeStartTime" class="form-input" value="8:30 AM">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Hora Finalización</label>
+              <input type="text" id="oeEndTime" class="form-input" value="11:30 AM">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Transportador</label>
+              <input type="text" id="oeTransporter" class="form-input" value="Carlos Rodríguez">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Medio de Transporte / Placa</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="oeTransportMode" class="form-input" value="Carro" style="width:50%;">
+                <input type="text" id="oePlate" class="form-input" value="WMA-452" style="width:50%;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Asesor Comercial</label>
+              <input type="text" id="oeAdvisor" class="form-input" value="Nays Navarro">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Solicitado Por</label>
+              <input type="text" id="oeRequestedBy" class="form-input" value="Leonardo Ramírez">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Persona que Recibe / Emergencia</label>
+              <input type="text" id="oeReceivedBy" class="form-input" value="Leonardo Ramírez">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Teléfono de Contacto</label>
+              <input type="text" id="oeReceiverPhone" class="form-input" value="3504163975">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tipo de Servicio</label>
+              <select id="oeServiceType" class="form-select">
+                <option value="Desayuno" selected>Desayuno</option>
+                <option value="Refrigerio">Refrigerio</option>
+                <option value="Almuerzo">Almuerzo Ligero</option>
+                <option value="Coffee Break">Coffee Break</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Presentación</label>
+              <select id="oeServiceDesc" class="form-select">
+                <option value="Servido" selected>Servido</option>
+                <option value="Empacado individual">Empacado individual</option>
+                <option value="Buffet libre">Buffet libre</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Cantidad de Personas</label>
+              <input type="number" id="oeQuantity" class="form-input" min="1" value="23" required>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label class="form-label">Detalle del Menú de Refrigerio</label>
+              <textarea id="oeProductDetail" class="form-textarea" required>EXPRESS Wrap de jamón, queso y vegetales - Fruta picada - Cereal Granola - Yogurt - Jugo natural 250 ml</textarea>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label class="form-label">Observaciones y Condiciones Especiales</label>
+              <input type="text" id="oeObservations" class="form-input" value="Estación de catering piso 2 con protocolo de servicio formal.">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalCreateOE')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear Orden y Programar Menaje</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: FORMATO FÍSICO DE REMISIÓN / CONFIRMACIÓN DE ENTREGA (OE 7217)
+       Idéntico al documento original de Refribreak adjuntado por el usuario
+       ========================================================================= -->
+  <div id="modalPrintOE" class="modal-backdrop">
+    <div class="modal-box modal-large" style="max-width: 900px;">
+      <div class="modal-header no-print">
+        <h3>Vista Previa del Formato Oficial de Confirmación de Entrega</h3>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Imprimir Documento</button>
+          <button class="modal-close-btn" onclick="closeModal('modalPrintOE')">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Hoja de Formato Físico -->
+        <div class="oe-document-sheet">
+          <!-- Encabezado -->
+          <div class="oe-header-grid">
+            <div class="oe-logo">
+              REFRI<span>BREAK</span>
+              <span>Sabores que Unen</span>
+            </div>
+            <div class="oe-title">
+              CONFIRMACION DE ENTREGA REFRIGERIOS
+            </div>
+            <div class="oe-box">
+              <span>OE:</span>
+              <span id="printOeConsecutive">7217</span>
+            </div>
+          </div>
+
+          <!-- Metadatos de Entrega -->
+          <table class="oe-meta-table">
+            <tr>
+              <td width="15%"><strong>Día:</strong></td>
+              <td width="35%" id="printOeDate">Viernes 16 de Octubre del 2026</td>
+              <td width="20%"><strong>Hora llegada:</strong></td>
+              <td width="30%" class="oe-highlight-green" id="printOeArrivalTime">7:30 AM</td>
+            </tr>
+            <tr>
+              <td><strong>Empresa:</strong></td>
+              <td class="oe-highlight-green" id="printOeCustomer">Liid Comunicacion y Creatividad SAS</td>
+              <td><strong>Hora de Inicio:</strong></td>
+              <td id="printOeStartTime">8:30 AM</td>
+            </tr>
+            <tr>
+              <td><strong>Ciudad:</strong></td>
+              <td>Bogotá</td>
+              <td><strong>Hora Finalización:</strong></td>
+              <td id="printOeEndTime">11:30 AM</td>
+            </tr>
+            <tr>
+              <td><strong>Dirección:</strong></td>
+              <td class="oe-highlight-green" id="printOeAddress">Trv 23 97 -73 Ofc 212 Bogota</td>
+              <td><strong>Datos de Ingreso:</strong></td>
+              <td>Sí • Correo Autorización: Sí</td>
+            </tr>
+            <tr>
+              <td><strong>Mesero:</strong></td>
+              <td>Sí • Teléfono: Sí</td>
+              <td><strong>Solicitado por:</strong></td>
+              <td id="printOeRequestedBy">Leonardo Ramírez</td>
+            </tr>
+            <tr>
+              <td><strong>Transportador:</strong></td>
+              <td id="printOeTransporter">Carlos Rodríguez</td>
+              <td><strong>Persona que recibe:</strong></td>
+              <td class="oe-highlight-green" id="printOeReceivedBy">Leonardo Ramírez • Tel: <span id="printOePhone">3504163975</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hora de Salida:</strong></td>
+              <td class="oe-highlight-green" id="printOeDepartureTime">6:40 AM</td>
+              <td><strong>Medio T / Placa:</strong></td>
+              <td><span id="printOeTransportMode">Carro</span> • <span id="printOePlate">WMA-452</span></td>
+            </tr>
+            <tr>
+              <td><strong>Asesor Comercial:</strong></td>
+              <td id="printOeAdvisor">Nays Navarro</td>
+              <td><strong>Observaciones:</strong></td>
+              <td>Entrega puntual piso 2 con estación completa.</td>
+            </tr>
+          </table>
+
+          <!-- Tabla de Producto Servido -->
+          <table class="oe-products-table">
+            <thead>
+              <tr>
+                <th width="10%">Cant</th>
+                <th width="20%">Tipo</th>
+                <th width="20%">Descripción</th>
+                <th width="50%">Producto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong id="printOeQty" style="font-size:16px;">23</strong></td>
+                <td id="printOeType">Desayuno</td>
+                <td id="printOeDesc">Servido</td>
+                <td class="text-left" id="printOeProductDetail">
+                  EXPRESS Wrap de jamón, queso y vegetales - Fruta picada - Cereal Granola - Yogurt - Jugo natural 250 ml
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Calificación del Servicio y Recepción -->
+          <div class="oe-feedback-grid">
+            <div>
+              <div class="oe-feedback-title">CALIFICACION DEL SERVICIO:</div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span>Puntualidad: [ 4 ] Excelente</span>
+                <span>Presentación: [ 4 ] Excelente</span>
+              </div>
+              <p style="color:#64748b; font-size:9px;">Escala: 4 Excelente | 3 Bueno | 2 Aceptable | 1 Malo</p>
+            </div>
+            <div>
+              <div class="oe-feedback-title">CONFIRMACION DE RECEPCION:</div>
+              <div class="oe-sign-box">
+                Firma Cliente Receptor / Sello: _____________________________________
+              </div>
+            </div>
+          </div>
+
+          <!-- Copia Correo Autorización Menaje de Catering -->
+          <div class="oe-catering-header">
+            COPIA CORREO AUTORIZACION POR PARTE DEL CLIENTE (MENAJE Y CATERING)
+          </div>
+          <div class="oe-equipment-grid" id="printOeEquipmentGrid">
+            <!-- Renderizado dinámicamente -->
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer no-print">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalPrintOE')">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Imprimir Formato</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- JavaScript Modules -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

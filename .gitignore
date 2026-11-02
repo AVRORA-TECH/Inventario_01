@@ -1,0 +1,100 @@
+# =============================================================================
+# Universal Multi-Language .gitignore
+# =============================================================================
+
+# 1. Secrets, Credentials & Certificates (STRICTLY IMMUTABLE / NEVER COMMIT)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.dist
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+vault.enc
+license.json
+.agents/agent.settings.local.json
+
+# 2. Local Backups & Databases
+.backups/*
+!.backups/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+*-wal
+*-shm
+*.dump
+
+# 3. Logs & Temporary Artifacts
+logs/
+*.log
+_tmp*
+tmp/
+temp/
+DEV/
+
+# 4. Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# 5. Node.js / TypeScript / Web
+node_modules/
+.pnp.*
+.yarn/
+.next/
+.nuxt/
+.svelte-kit/
+.astro/
+.turbo/
+.parcel-cache/
+
+# 6. Go / Rust / C / C++ / Embedded
+target/
+vendor/
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.a
+*.lib
+*.elf
+*.bin
+*.hex
+cmake-build-*/
+
+# 7. JVM (Java / Kotlin) & .NET (C#)
+.gradle/
+build/
+out/
+bin/
+obj/
+*.class
+*.jar
+*.war
+*.nupkg
+
+# 8. Common Build, Coverage & OS / IDE Files
+dist/
+coverage/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+

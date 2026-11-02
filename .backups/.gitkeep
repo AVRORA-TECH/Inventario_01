@@ -1,0 +1,3 @@
+# Directorio local de snapshots verificados (.zip + .sha256).
+# Los archivos de backup están excluidos por .gitignore para proteger la privacidad y el historial Git.
+
