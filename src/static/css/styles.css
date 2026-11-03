@@ -1,15 +1,18 @@
-/* Refribreak Inventory Core (RIC) - Premium Design System
-   Vanilla CSS with CSS Custom Properties, modern typography and clean layout.
+/* Refribreak Inventory Core (RIC) - Siigo Nube Inspired Design System
+   Vanilla CSS with Siigo blue palette, vibrant green action buttons,
+   circular action cards, and responsive enterprise layouts.
 */
 :root {
-  /* Brand & Navy Palette */
-  --bg-sidebar: #131b2e;
-  --bg-sidebar-hover: #1c2742;
-  --bg-sidebar-active: #243356;
-  --sidebar-text: #94a3b8;
-  --sidebar-text-active: #ffffff;
-  
-  --bg-app: #f4f6fa;
+  /* Siigo Nube Theme Colors */
+  --siigo-blue: #0074e8;
+  --siigo-blue-dark: #005bb8;
+  --siigo-blue-light: #389bfe;
+  --siigo-blue-soft: #eaf3ff;
+  --siigo-green: #68b828;
+  --siigo-green-hover: #5ba622;
+  --siigo-header-text: #2c3e50;
+
+  --bg-app: #f4f6f9;
   --bg-surface: #ffffff;
   --bg-surface-alt: #f8fafc;
   --border-subtle: #e2e8f0;
@@ -17,18 +20,9 @@
 
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
+  --text-main: #2b3a4a;
+  --text-muted: #627488;
   --text-light: #94a3b8;
-
-  /* Accents */
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-light: #e0f2fe;
-  
-  --brand-green: #15803d;
-  --brand-green-light: #dcfce7;
-  --brand-green-header: #86efac;
 
   /* Status Colors */
   --success-text: #166534;
@@ -43,10 +37,10 @@
   --blue-bg: #dbeafe;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
-  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -79,168 +73,154 @@ body {
   overflow: hidden;
 }
 
-/* Sidebar (Shopware inspired) */
+/* =========================================================================
+   SIDEBAR (Siigo Nube Icon-Rail Style)
+   ========================================================================= */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
-  background-color: var(--bg-sidebar);
+  width: 68px;
+  min-width: 68px;
+  background-color: var(--siigo-blue);
   display: flex;
   flex-direction: column;
-  color: var(--sidebar-text);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  z-index: 10;
+  align-items: center;
+  padding: 14px 0;
+  color: #ffffff;
+  z-index: 20;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+  transition: width 0.2s ease;
 }
 
 .sidebar-header {
-  padding: 24px 20px;
+  margin-bottom: 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brand-badge {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #22c55e, #0284c7);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-weight: 800;
+  color: var(--siigo-blue);
+  font-weight: 900;
   font-size: 20px;
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
-}
-
-.brand-text h1 {
-  font-size: 17px;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-}
-
-.brand-text span {
-  font-size: 11px;
-  color: #94a3b8;
-  display: block;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 20px 12px;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
   overflow-y: auto;
-}
-
-.nav-section-title {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  padding: 8px 12px 4px 12px;
-  font-weight: 600;
+  overflow-x: hidden;
 }
 
 .nav-item {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--sidebar-text);
+  justify-content: center;
+  color: #ffffff;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
   transition: var(--transition);
+  position: relative;
 }
 
 .nav-item:hover {
-  background-color: var(--bg-sidebar-hover);
-  color: var(--sidebar-text-active);
+  background-color: rgba(255, 255, 255, 0.18);
 }
 
 .nav-item.active {
-  background-color: var(--bg-sidebar-active);
-  color: #ffffff;
-  box-shadow: inset 3px 0 0 #38bdf8;
+  background-color: var(--siigo-blue-light);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .nav-item svg {
-  width: 18px;
-  height: 18px;
-  opacity: 0.8;
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
 }
 
-.nav-item.active svg {
+.nav-item span {
+  display: none; /* Icon-only rail in Siigo */
+}
+
+/* Tooltip on hover */
+.nav-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 64px;
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: var(--transition);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+}
+
+.nav-item:hover::after {
   opacity: 1;
-  color: #38bdf8;
+  transform: translateX(0);
 }
 
 .nav-badge {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 7px;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
   border-radius: var(--radius-full);
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
-}
-
-.nav-badge.alert {
   background-color: #ef4444;
   color: #fff;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+  line-height: 1.2;
 }
 
 .sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.user-avatar {
-  width: 36px;
-  height: 36px;
+.user-avatar-mini {
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-full);
-  background-color: #0369a1;
-  color: #fff;
-  font-weight: 600;
+  background-color: #ffffff;
+  color: var(--siigo-blue);
+  font-weight: 700;
   font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
 }
 
-.user-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #f1f5f9;
-}
-
-.user-role {
-  font-size: 11px;
-  color: #94a3b8;
-}
-
-/* Main Content Area */
+/* =========================================================================
+   TOP HEADER (Siigo Nube Style)
+   ========================================================================= */
 .main-wrapper {
   flex: 1;
   display: flex;
@@ -248,163 +228,219 @@ body {
   overflow: hidden;
 }
 
-/* Header (Shopware / Sellerskills style) */
 .top-header {
-  height: 64px;
-  background-color: var(--bg-surface);
+  height: 60px;
+  background-color: #ffffff;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  box-shadow: var(--shadow-sm);
-  z-index: 5;
+  padding: 0 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  z-index: 10;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
-.search-pill-container {
-  position: relative;
-  width: 380px;
-}
-
-.search-pill {
-  width: 100%;
-  height: 38px;
-  padding: 0 16px 0 40px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-subtle);
-  background-color: var(--bg-surface-alt);
-  font-size: 13px;
-  color: var(--text-main);
-  outline: none;
-  transition: var(--transition);
-}
-
-.search-pill:focus {
-  border-color: var(--primary);
-  background-color: #fff;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-light);
-  width: 16px;
-  height: 16px;
-}
-
-.warehouse-selector-wrapper {
+.siigo-brand-logo {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--siigo-blue);
+  letter-spacing: -0.04em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
-.warehouse-select {
-  height: 38px;
-  padding: 0 32px 0 12px;
+.siigo-brand-logo span {
+  color: #ff8a00;
+  font-size: 14px;
+}
+
+.company-title-pill {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 14px;
+  border-left: 2px solid var(--border-subtle);
+}
+
+.company-warehouse-select {
+  height: 32px;
+  padding: 0 28px 0 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
-  background-color: var(--bg-surface);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-main);
+  background-color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
   outline: none;
   cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 14px;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-/* Primary and secondary buttons */
-.btn {
-  display: inline-flex;
+.header-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 16px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  color: var(--text-muted);
+  background: none;
+  border: none;
   cursor: pointer;
+  position: relative;
   transition: var(--transition);
-  text-decoration: none;
 }
 
-.btn-primary {
-  background-color: var(--primary);
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
-}
-
-.btn-secondary {
-  background-color: #fff;
-  border-color: var(--border-subtle);
+.header-icon-btn:hover {
+  background-color: #f1f5f9;
   color: var(--text-main);
 }
 
-.btn-secondary:hover {
-  background-color: var(--bg-surface-alt);
-  border-color: var(--border-hover);
+.notification-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: #ef4444;
 }
 
-.btn-success {
-  background-color: var(--brand-green);
-  color: #fff;
-}
-
-.btn-success:hover {
-  background-color: #166534;
-}
-
-.btn-ai {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-  border: none;
-}
-
-.btn-ai:hover {
-  opacity: 0.95;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-}
-
-.btn-sm {
-  height: 30px;
+.search-box-siigo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
   padding: 0 10px;
-  font-size: 12px;
+  height: 34px;
+  width: 170px;
 }
 
-/* Views Container */
+.search-box-siigo input {
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: var(--text-main);
+  width: 100%;
+}
+
+.btn-help-dropdown {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Green + Crear Button (Signature Siigo Button) */
+.create-dropdown-wrapper {
+  position: relative;
+}
+
+.btn-siigo-create {
+  background-color: var(--siigo-green);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  height: 34px;
+  padding: 0 18px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(104, 184, 40, 0.25);
+  transition: var(--transition);
+}
+
+.btn-siigo-create:hover {
+  background-color: var(--siigo-green-hover);
+}
+
+.create-menu-dropdown {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  background-color: #ffffff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  border: 1px solid var(--border-subtle);
+  width: 250px;
+  display: none;
+  flex-direction: column;
+  padding: 6px 0;
+  z-index: 50;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.create-menu-dropdown.active {
+  display: flex;
+}
+
+.create-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text-main);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.create-menu-item:hover {
+  background-color: var(--siigo-blue-soft);
+  color: var(--siigo-blue);
+}
+
+.demo-nube-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--siigo-blue);
+  background-color: var(--siigo-blue-soft);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+}
+
+/* =========================================================================
+   DASHBOARD: "Te damos la bienvenida. ¿Qué deseas hacer?" (Siigo Nube)
+   ========================================================================= */
 .views-content {
   flex: 1;
   overflow-y: auto;
-  padding: 28px;
+  padding: 24px 32px;
 }
 
 .view-panel {
   display: none;
-  animation: fadeIn 0.25s ease-in-out;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
 .view-panel.active {
@@ -416,39 +452,121 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* View Header */
-.view-title-row {
+.siigo-welcome-section {
+  background-color: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.siigo-welcome-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 26px;
+}
+
+/* Action Circle Grid */
+.siigo-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  column-gap: 24px;
+  row-gap: 28px;
+  justify-items: center;
+}
+
+.siigo-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  group: pointer;
+  transition: var(--transition);
+}
+
+.siigo-action-card:hover .action-circle {
+  transform: translateY(-3px);
+  border-color: var(--siigo-blue);
+  box-shadow: 0 6px 14px rgba(0, 116, 232, 0.18);
+  background-color: var(--siigo-blue-soft);
+}
+
+.siigo-action-card:hover .action-label {
+  color: var(--siigo-blue);
+  font-weight: 600;
+}
+
+.action-circle-wrapper {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.action-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-full);
+  border: 2px solid #e2e8f0;
+  background-color: #ffffff;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
+  justify-content: center;
+  color: var(--siigo-blue);
+  font-size: 26px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: var(--transition);
 }
 
-.view-title-row h2 {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.02em;
+.action-circle.highlight {
+  border-color: #38bdf8;
+  background-color: #f0f9ff;
 }
 
-.view-title-row p {
+.action-pill-badge {
+  position: absolute;
+  top: -4px;
+  right: -12px;
+  background: #ff8a00;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 4px rgba(255, 138, 0, 0.3);
+}
+
+.action-pill-badge.ai {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.action-label {
   font-size: 13px;
-  color: var(--text-muted);
+  color: #334155;
+  font-weight: 500;
+  max-width: 140px;
+  line-height: 1.3;
+  transition: var(--transition);
 }
 
-/* Dashboard Metrics Grid */
+/* =========================================================================
+   METRICS & ALERT BANNER
+   ========================================================================= */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .metric-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 18px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
@@ -469,49 +587,49 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--primary);
+  background: var(--siigo-blue);
 }
 
 .metric-card.warning::before { background: #f59e0b; }
 .metric-card.danger::before { background: #ef4444; }
-.metric-card.success::before { background: #10b981; }
+.metric-card.success::before { background: var(--siigo-green); }
 
 .metric-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .metric-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
 }
 
 .metric-icon {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-sm);
-  background-color: var(--bg-surface-alt);
+  background-color: var(--siigo-blue-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
+  color: var(--siigo-blue);
 }
 
 .metric-value {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   margin-bottom: 4px;
 }
 
 .metric-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -520,8 +638,8 @@ body {
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
   border: 1px solid #fde68a;
   border-radius: var(--radius-md);
-  padding: 16px 20px;
-  margin-bottom: 28px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -531,12 +649,12 @@ body {
 .alert-banner-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .alert-banner-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
   background-color: #f59e0b;
   color: #fff;
@@ -547,8 +665,8 @@ body {
 }
 
 .alert-banner h4 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: #92400e;
 }
 
@@ -557,7 +675,9 @@ body {
   color: #b45309;
 }
 
-/* Tables Card Container (Sellerskills & Airtable style) */
+/* =========================================================================
+   TABLES & CARDS
+   ========================================================================= */
 .card-table-container {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -568,7 +688,7 @@ body {
 }
 
 .table-toolbar {
-  padding: 16px 20px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -601,7 +721,6 @@ body {
   overflow-x: auto;
 }
 
-/* Custom Table Styles */
 .custom-table {
   width: 100%;
   border-collapse: collapse;
@@ -622,14 +741,10 @@ body {
 }
 
 .custom-table td {
-  padding: 14px 16px;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-main);
   vertical-align: middle;
-}
-
-.custom-table tbody tr {
-  transition: var(--transition);
 }
 
 .custom-table tbody tr:hover {
@@ -640,7 +755,7 @@ body {
   border-bottom: none;
 }
 
-/* Badges / Pills (Airtable / Notion inspired) */
+/* Badges / Pills */
 .badge-pill {
   display: inline-flex;
   align-items: center;
@@ -659,31 +774,68 @@ body {
 .badge-blue { background-color: var(--blue-bg); color: var(--blue-text); }
 .badge-gray { background-color: #f1f5f9; color: #475569; }
 
-/* Action Links */
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: var(--siigo-blue);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: var(--siigo-blue-dark);
+}
+
+.btn-secondary {
+  background-color: #fff;
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-surface-alt);
+  border-color: var(--border-hover);
+}
+
+.btn-success {
+  background-color: var(--siigo-green);
+  color: #fff;
+}
+
+.btn-success:hover {
+  background-color: var(--siigo-green-hover);
+}
+
+.btn-ai {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+}
+
+.btn-sm {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
 .action-btn-group {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.icon-action-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background-color: #fff;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.icon-action-btn:hover {
-  background-color: var(--primary-light);
-  color: var(--primary);
-  border-color: var(--primary);
 }
 
 /* Modals */
@@ -720,7 +872,7 @@ body {
 }
 
 .modal-header {
-  padding: 20px 24px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
@@ -728,7 +880,7 @@ body {
 }
 
 .modal-header h3 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text-main);
 }
@@ -741,10 +893,6 @@ body {
   cursor: pointer;
   padding: 4px;
   line-height: 1;
-}
-
-.modal-close-btn:hover {
-  color: var(--text-main);
 }
 
 .modal-body {
@@ -805,11 +953,10 @@ body {
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  border-color: var(--siigo-blue);
+  box-shadow: 0 0 0 3px rgba(0, 116, 232, 0.15);
 }
 
-/* AI Invoice Simulator Box inside Entry Modal */
 .ai-dropzone-box {
   border: 2px dashed #818cf8;
   background-color: #f5f3ff;
@@ -904,7 +1051,6 @@ body {
   font-weight: bold;
 }
 
-/* Tabla Productos OE */
 .oe-products-table {
   width: 100%;
   border-collapse: collapse;
@@ -930,7 +1076,6 @@ body {
   text-align: left;
 }
 
-/* Calificación y Firma */
 .oe-feedback-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -953,7 +1098,6 @@ body {
   padding-top: 4px;
 }
 
-/* Copia Correo Menaje */
 .oe-catering-header {
   background-color: #86efac;
   text-align: center;
@@ -987,7 +1131,7 @@ body {
   font-weight: bold;
 }
 
-/* Toast notifications */
+/* Toasts */
 .toast-container {
   position: fixed;
   bottom: 24px;

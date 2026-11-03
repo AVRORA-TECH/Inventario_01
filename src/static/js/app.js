@@ -633,6 +633,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('inventorySearchInput')?.addEventListener('input', () => loadInventory());
   document.getElementById('filterCategorySelect')?.addEventListener('change', () => loadInventory());
 
+  // Siigo +Crear dropdown
+  const btnToggleCreate = document.getElementById('btnToggleCreateMenu');
+  const createDropdown = document.getElementById('createMenuDropdown');
+
+  if (btnToggleCreate && createDropdown) {
+    btnToggleCreate.addEventListener('click', (e) => {
+      e.stopPropagation();
+      createDropdown.classList.toggle('active');
+    });
+
+    document.addEventListener('click', () => {
+      createDropdown.classList.remove('active');
+    });
+  }
+
   // Forms
   document.getElementById('formPurchaseEntry')?.addEventListener('submit', submitPurchaseEntry);
   document.getElementById('formCreateOE')?.addEventListener('submit', submitCreateOrder);
@@ -642,3 +657,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadInitialMetadata();
   switchView('dashboard');
 });
+
+function closeCreateMenu() {
+  document.getElementById('createMenuDropdown')?.classList.remove('active');
+}
+
