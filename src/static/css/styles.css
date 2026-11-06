@@ -1163,6 +1163,341 @@ body {
   to { transform: translateX(0); opacity: 1; }
 }
 
+/* =========================================================================
+   PROCUREMENT & SUPPLIER COMPARISON MODULE
+   ========================================================================= */
+.subtabs-bar {
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid var(--border-subtle);
+  margin-bottom: 24px;
+}
+
+.subtab-btn {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: var(--transition);
+}
+
+.subtab-btn:hover {
+  color: var(--siigo-blue);
+}
+
+.subtab-btn.active {
+  color: var(--siigo-blue);
+  border-bottom-color: var(--siigo-blue);
+}
+
+.subtab-content {
+  display: none;
+}
+
+.subtab-content.active {
+  display: block;
+}
+
+/* Urgency Pills */
+.pill-urgency {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pill-urgency.critical {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.pill-urgency.low_stock {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.pill-urgency.normal {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* Supplier Comparison Cards Grid */
+.comparison-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.quote-card {
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: var(--transition);
+}
+
+.quote-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.quote-card.cheapest {
+  border-color: #10b981;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 40%);
+}
+
+.quote-card.fastest {
+  border-color: #f59e0b;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 40%);
+}
+
+.quote-card.awarded {
+  border-color: var(--siigo-blue);
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 40%);
+}
+
+.quote-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.quote-supplier-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.quote-supplier-nit {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.badge-decision {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.badge-decision.best-price {
+  background-color: #10b981;
+  color: white;
+}
+
+.badge-decision.fastest {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.badge-decision.recommended {
+  background-color: var(--siigo-blue);
+  color: white;
+}
+
+.quote-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.quote-meta-row strong {
+  color: var(--text-main);
+}
+
+.quote-total-box {
+  margin-top: 14px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.quote-total-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.quote-total-amount {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--siigo-navy);
+  margin-top: 2px;
+}
+
+.quote-savings-chip {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  background-color: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9999px;
+}
+
+.btn-award-quote {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--siigo-green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.btn-award-quote:hover:not(:disabled) {
+  background-color: #15803d;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+}
+
+.btn-award-quote:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Comparison Item Matrix Highlighting */
+.table-matrix td.cell-best-price {
+  background-color: #ecfdf5 !important;
+  font-weight: 700;
+  color: #047857;
+}
+
+.badge-lowest-pill {
+  background-color: #10b981;
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 800;
+}
+
+/* Printable Purchase Order Sheet */
+.po-document-sheet {
+  background: white;
+  border: 1px solid #cbd5e1;
+  padding: 30px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+}
+
+.po-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--siigo-navy);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.po-title-box h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--siigo-navy);
+  letter-spacing: -0.5px;
+}
+
+.po-title-box span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--siigo-green);
+}
+
+.po-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.po-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.po-table th {
+  background-color: var(--siigo-navy);
+  color: white;
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 600;
+}
+
+.po-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.po-totals-box {
+  margin-left: auto;
+  width: 280px;
+  font-size: 13px;
+}
+
+.po-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.po-total-row.grand {
+  font-size: 16px;
+  font-weight: 900;
+  border-top: 2px solid #0f172a;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+
 /* Print Styles */
 @media print {
   body {

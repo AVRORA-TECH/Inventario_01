@@ -207,3 +207,173 @@ class DashboardSummary(BaseModel):
 class AiInvoiceSimulationRequest(BaseModel):
     raw_text: Optional[str] = None
     supplier_hint: Optional[str] = None
+
+
+# --- Procurement & Comparison Schemas ---
+
+class ReplenishmentSuggestionItem(BaseModel):
+    product_id: str
+    product_name: str
+    sku: str
+    category_name: str
+    unit: str
+    warehouse_id: str
+    warehouse_name: str
+    available_qty: float
+    reserved_qty: float
+    min_stock: float
+    deficit_qty: float
+    suggested_qty: float
+    last_unit_cost: float
+    estimated_total_cost: float
+    urgency: str  # 'CRITICAL', 'LOW_STOCK', 'NORMAL'
+
+
+class PurchaseRequisitionItemCreate(BaseModel):
+    product_id: str
+    requested_qty: float = Field(..., gt=0)
+    estimated_unit_cost: Optional[float] = Field(0.0, ge=0)
+
+
+class PurchaseRequisitionCreate(BaseModel):
+    warehouse_id: str
+    origin: Optional[str] = "INVENTORY_SUGGESTION"
+    notes: Optional[str] = None
+    items: List[PurchaseRequisitionItemCreate]
+
+
+class PurchaseRequisitionItemResponse(BaseModel):
+    id: str
+    product_id: str
+    product_name: str
+    sku: str
+    unit: str
+    current_stock: float
+    min_stock: float
+    requested_qty: float
+    estimated_unit_cost: float
+
+
+class PurchaseRequisitionResponse(BaseModel):
+    id: str
+    consecutive: str
+    warehouse_id: str
+    warehouse_name: str
+    status: str
+    origin: str
+    notes: Optional[str] = None
+    created_by: str
+    created_at: str
+    items: List[PurchaseRequisitionItemResponse]
+    quotations_count: int
+
+
+class SupplierQuotationItemCreate(BaseModel):
+    product_id: str
+    unit_cost: float = Field(..., ge=0)
+    quantity: Optional[float] = None
+
+
+class SupplierQuotationCreate(BaseModel):
+    supplier_id: str
+    quotation_number: Optional[str] = None
+    delivery_days: int = Field(1, ge=1)
+    payment_terms: str = "Contado"
+    shipping_cost: float = Field(0.0, ge=0)
+    notes: Optional[str] = None
+    items: List[SupplierQuotationItemCreate]
+
+
+class SupplierQuotationResponse(BaseModel):
+    id: str
+    requisition_id: str
+    supplier_id: str
+    supplier_name: str
+    quotation_number: Optional[str] = None
+    delivery_days: int
+    payment_terms: str
+    shipping_cost: float
+    subtotal_items: float
+    total_amount: float
+    is_awarded: bool
+    notes: Optional[str] = None
+    created_at: str
+
+
+class ComparisonMatrixItem(BaseModel):
+    product_id: str
+    product_name: str
+    sku: str
+    unit: str
+    requested_qty: float
+    prices_by_supplier: Dict[str, float]
+    lowest_unit_price: float
+    lowest_supplier_id: str
+
+
+class ComparisonSupplierCard(BaseModel):
+    quotation_id: str
+    supplier_id: str
+    supplier_name: str
+    supplier_nit: str
+    delivery_days: int
+    payment_terms: str
+    items_subtotal: float
+    shipping_cost: float
+    total_amount: float
+    savings_cop: float
+    savings_pct: float
+    is_cheapest: bool
+    is_fastest: bool
+    recommendation_badge: str
+    is_awarded: bool
+
+
+class ComparisonMatrixResponse(BaseModel):
+    requisition_id: str
+    requisition_consecutive: str
+    warehouse_name: str
+    notes: Optional[str] = None
+    items: List[ComparisonMatrixItem]
+    suppliers: List[ComparisonSupplierCard]
+    best_quote_id: Optional[str] = None
+
+
+class PurchaseOrderItemResponse(BaseModel):
+    id: str
+    product_id: str
+    product_name: str
+    sku: str
+    unit: str
+    quantity: float
+    unit_cost: float
+    total_cost: float
+    received_qty: float
+
+
+class PurchaseOrderResponse(BaseModel):
+    id: str
+    consecutive_oc: str
+    requisition_id: Optional[str] = None
+    quotation_id: Optional[str] = None
+    supplier_id: str
+    supplier_name: str
+    supplier_nit: str
+    warehouse_id: str
+    warehouse_name: str
+    status: str
+    order_date: str
+    expected_delivery_date: str
+    payment_terms: str
+    subtotal: float
+    shipping_cost: float
+    total_amount: float
+    notes: Optional[str] = None
+    created_by: str
+    created_at: str
+    items: List[PurchaseOrderItemResponse]
+
+
+class ReceivePurchaseOrderRequest(BaseModel):
+    expiration_date_override: Optional[str] = None
+    notes: Optional[str] = None

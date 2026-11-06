@@ -11,7 +11,10 @@ from src.schemas import (
     WarehouseResponse, CategoryResponse, ProductCreate, ProductResponse,
     StockItemResponse, LotItemResponse, PurchaseEntryRequest, DispatchRequest,
     WasteRequest, InventoryAdjustmentRequest, DeliveryOrderCreate, DeliveryOrderResponse,
-    DashboardSummary, AiInvoiceSimulationRequest
+    DashboardSummary, AiInvoiceSimulationRequest,
+    ReplenishmentSuggestionItem, PurchaseRequisitionCreate, PurchaseRequisitionResponse,
+    SupplierQuotationCreate, SupplierQuotationResponse, ComparisonMatrixResponse,
+    PurchaseOrderResponse, ReceivePurchaseOrderRequest
 )
 from src.services.inventory_service import (
     process_purchase_entry, process_fefo_dispatch,
@@ -19,6 +22,12 @@ from src.services.inventory_service import (
 )
 from src.services.order_service import create_delivery_order, dispatch_delivery_order
 from src.services.ai_service import extract_invoice_data
+from src.services.purchase_service import (
+    get_replenishment_suggestions, create_purchase_requisition, get_purchase_requisitions,
+    get_purchase_requisition_detail, add_supplier_quotation, compare_quotations,
+    award_quotation_and_create_po, get_purchase_orders, get_purchase_order_detail,
+    receive_purchase_order
+)
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -507,3 +516,120 @@ def list_audit_logs(limit: int = 50):
 def simulate_ai_extraction(req: AiInvoiceSimulationRequest):
     """Simulates AI OCR invoice reading for rapid receiving."""
     return extract_invoice_data(raw_text=req.raw_text, supplier_hint=req.supplier_hint)
+
+
+# --- Procurement & Comparison Endpoints ---
+
+@api_router.get("/purchases/replenishment-suggestions", response_model=List[ReplenishmentSuggestionItem])
+def get_purchase_suggestions_endpoint(warehouse_id: Optional[str] = None):
+    """Calculates inventory replenishment recommendations based on min_stock and reservations."""
+    return get_replenishment_suggestions(warehouse_id)
+
+
+@api_router.post("/purchases/requisitions", response_model=PurchaseRequisitionResponse, status_code=status.HTTP_201_CREATED)
+def create_purchase_requisition_endpoint(req: PurchaseRequisitionCreate):
+    """Creates a new purchase requisition from inventory suggestion or manual selection."""
+    try:
+        items_dict = [it.model_dump() for it in req.items]
+        return create_purchase_requisition(
+            warehouse_id=req.warehouse_id,
+            origin=req.origin or "INVENTORY_SUGGESTION",
+            notes=req.notes,
+            items=items_dict
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/purchases/requisitions", response_model=List[PurchaseRequisitionResponse])
+def list_purchase_requisitions_endpoint(
+    warehouse_id: Optional[str] = None,
+    status: Optional[str] = None
+):
+    """Lists purchase requisitions."""
+    reqs = get_purchase_requisitions(warehouse_id, status)
+    # Populate items for response consistency
+    results = []
+    for r in reqs:
+        det = get_purchase_requisition_detail(r["id"])
+        results.append(det)
+    return results
+
+
+@api_router.get("/purchases/requisitions/{req_id}", response_model=PurchaseRequisitionResponse)
+def get_purchase_requisition_endpoint(req_id: str):
+    """Gets details of a purchase requisition."""
+    try:
+        return get_purchase_requisition_detail(req_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@api_router.post("/purchases/requisitions/{req_id}/quotations", response_model=SupplierQuotationResponse, status_code=status.HTTP_201_CREATED)
+def add_supplier_quotation_endpoint(req_id: str, quote: SupplierQuotationCreate):
+    """Registers a quotation from a supplier for comparison."""
+    try:
+        items_dict = [it.model_dump() for it in quote.items]
+        return add_supplier_quotation(
+            requisition_id=req_id,
+            supplier_id=quote.supplier_id,
+            quotation_number=quote.quotation_number,
+            delivery_days=quote.delivery_days,
+            payment_terms=quote.payment_terms,
+            shipping_cost=quote.shipping_cost,
+            notes=quote.notes,
+            items=items_dict
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/purchases/requisitions/{req_id}/compare", response_model=ComparisonMatrixResponse)
+def compare_quotations_endpoint(req_id: str):
+    """Generates the side-by-side multi-criteria comparison matrix for decision making."""
+    try:
+        return compare_quotations(req_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@api_router.post("/purchases/quotations/{quote_id}/award", response_model=PurchaseOrderResponse)
+def award_quotation_endpoint(quote_id: str, notes: Optional[str] = Query(None)):
+    """Awards the selected quotation and automatically creates the official Purchase Order (OC)."""
+    try:
+        return award_quotation_and_create_po(quotation_id=quote_id, notes=notes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/purchases/orders", response_model=List[PurchaseOrderResponse])
+def list_purchase_orders_endpoint(status: Optional[str] = None):
+    """Lists official purchase orders."""
+    pos = get_purchase_orders(status)
+    results = []
+    for p in pos:
+        results.append(get_purchase_order_detail(p["id"]))
+    return results
+
+
+@api_router.get("/purchases/orders/{po_id}", response_model=PurchaseOrderResponse)
+def get_purchase_order_endpoint(po_id: str):
+    """Gets details of an official purchase order."""
+    try:
+        return get_purchase_order_detail(po_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@api_router.post("/purchases/orders/{po_id}/receive")
+def receive_purchase_order_endpoint(po_id: str, req: ReceivePurchaseOrderRequest):
+    """Receives physical merchandise from a Purchase Order into warehouse stock with FEFO lots."""
+    try:
+        return receive_purchase_order(
+            po_id=po_id,
+            expiration_date_override=req.expiration_date_override,
+            notes=req.notes
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

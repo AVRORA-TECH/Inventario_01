@@ -73,6 +73,7 @@ function switchView(viewName) {
   // Load view-specific data
   if (viewName === 'dashboard') loadDashboard();
   else if (viewName === 'inventory') loadInventory();
+  else if (viewName === 'purchases') loadPurchasesView();
   else if (viewName === 'orders') loadOrders();
   else if (viewName === 'lots') loadLots();
   else if (viewName === 'kardex') loadKardex();
@@ -652,6 +653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('formPurchaseEntry')?.addEventListener('submit', submitPurchaseEntry);
   document.getElementById('formCreateOE')?.addEventListener('submit', submitCreateOrder);
   document.getElementById('btnRunAi')?.addEventListener('click', handleSimulateAiInvoice);
+  document.getElementById('formAddQuotation')?.addEventListener('submit', handleSaveQuotation);
 
   // Initialize
   await loadInitialMetadata();
@@ -660,5 +662,615 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function closeCreateMenu() {
   document.getElementById('createMenuDropdown')?.classList.remove('active');
+}
+
+/* =========================================================================
+   PROCUREMENT, COMPARISON & SMART REPLENISHMENT MODULE
+   ========================================================================= */
+
+let activePurchaseTab = 'suggestions';
+let currentReplenishmentData = [];
+let currentComparisonData = null;
+
+function loadPurchasesView() {
+  switchPurchaseTab(activePurchaseTab);
+}
+
+function switchPurchaseTab(tabName) {
+  activePurchaseTab = tabName;
+
+  // Toggle tab buttons
+  document.getElementById('btnTabSuggestions')?.classList.toggle('active', tabName === 'suggestions');
+  document.getElementById('btnTabComparator')?.classList.toggle('active', tabName === 'comparator');
+  document.getElementById('btnTabOrders')?.classList.toggle('active', tabName === 'orders');
+
+  // Toggle tab contents
+  document.getElementById('subtabSuggestions')?.classList.toggle('active', tabName === 'suggestions');
+  document.getElementById('subtabComparator')?.classList.toggle('active', tabName === 'comparator');
+  document.getElementById('subtabOrders')?.classList.toggle('active', tabName === 'orders');
+
+  if (tabName === 'suggestions') {
+    loadReplenishmentSuggestions();
+  } else if (tabName === 'comparator') {
+    loadRequisitionsForDropdown();
+  } else if (tabName === 'orders') {
+    loadPurchaseOrders();
+  }
+}
+
+// 1. REPLENISHMENT SUGGESTIONS BASED ON INVENTORY
+async function loadReplenishmentSuggestions() {
+  const tbody = document.getElementById('suggestionsTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:28px;">Analizando niveles de stock y reservas en bodega...</td></tr>`;
+
+  try {
+    const data = await apiClient.getReplenishmentSuggestions(state.activeWarehouseId);
+    currentReplenishmentData = data;
+
+    // Update summary metrics
+    const critCount = data.filter(i => i.urgency === 'CRITICAL').length;
+    const lowCount = data.filter(i => i.urgency === 'LOW_STOCK').length;
+    const totalEstCost = data.reduce((acc, curr) => acc + (curr.estimated_total_cost || 0), 0);
+
+    const elCrit = document.getElementById('suggCritCount');
+    const elLow = document.getElementById('suggLowCount');
+    const elCost = document.getElementById('suggTotalCost');
+    const badgeCount = document.getElementById('badgeSuggestionsCount');
+
+    if (elCrit) elCrit.textContent = critCount;
+    if (elLow) elLow.textContent = lowCount;
+    if (elCost) elCost.textContent = formatCOP(totalEstCost);
+
+    if (badgeCount) {
+      const totalAlerts = critCount + lowCount;
+      if (totalAlerts > 0) {
+        badgeCount.style.display = 'inline-block';
+        badgeCount.textContent = totalAlerts;
+      } else {
+        badgeCount.style.display = 'none';
+      }
+    }
+
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:28px; color:#16a34a; font-weight:600;">
+        ✓ Todos los productos cumplen el nivel de stock mínimo en esta sede. No se requieren compras urgentes.
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map((item, idx) => {
+      const urgencyClass = item.urgency.toLowerCase();
+      const urgencyLabel = item.urgency === 'CRITICAL' ? 'Crítico (Agotado)' : item.urgency === 'LOW_STOCK' ? 'Bajo Stock Mín.' : 'Normal';
+
+      return `
+        <tr>
+          <td><input type="checkbox" class="sugg-check" data-index="${idx}" checked></td>
+          <td><strong>${item.product_name}</strong></td>
+          <td><code>${item.sku}</code></td>
+          <td><span class="badge-pill badge-gray">${item.category_name}</span></td>
+          <td>${item.warehouse_name}</td>
+          <td style="font-weight:700; color:${item.available_qty <= 0 ? '#dc2626' : '#0f172a'};">
+            ${item.available_qty} ${item.unit}
+          </td>
+          <td>${item.min_stock} ${item.unit}</td>
+          <td style="color:#dc2626; font-weight:700;">-${item.deficit_qty}</td>
+          <td>
+            <input type="number" id="suggQtyInput_${idx}" class="form-input" style="width:80px; padding:4px 8px; font-weight:700;" value="${item.suggested_qty}" min="1" step="1">
+          </td>
+          <td>${formatCOP(item.last_unit_cost)}</td>
+          <td style="font-weight:700; color:var(--siigo-navy);">${formatCOP(item.estimated_total_cost)}</td>
+          <td>
+            <span class="pill-urgency ${urgencyClass}">${urgencyLabel}</span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:#dc2626; padding:20px;">Error al cargar sugerencias: ${err.message}</td></tr>`;
+  }
+}
+
+function toggleSelectAllSuggestions(checked) {
+  document.querySelectorAll('.sugg-check').forEach(chk => { chk.checked = checked; });
+}
+
+async function createRequisitionFromSelectedSuggestions() {
+  const checkboxes = document.querySelectorAll('.sugg-check:checked');
+  if (!checkboxes.length) {
+    showToast('Selecciona al menos un producto de la lista para cotizar', 'error');
+    return;
+  }
+
+  const items = [];
+  checkboxes.forEach(chk => {
+    const idx = parseInt(chk.dataset.index, 10);
+    const item = currentReplenishmentData[idx];
+    const qtyInput = document.getElementById(`suggQtyInput_${idx}`);
+    const qty = qtyInput ? parseFloat(qtyInput.value) : item.suggested_qty;
+
+    if (item && qty > 0) {
+      items.push({
+        product_id: item.product_id,
+        requested_qty: qty,
+        estimated_unit_cost: item.last_unit_cost || 0.0
+      });
+    }
+  });
+
+  const warehouseId = state.activeWarehouseId || state.warehouses[0]?.id || 'wh-bog-central';
+
+  try {
+    const res = await apiClient.createPurchaseRequisition({
+      warehouse_id: warehouseId,
+      origin: 'INVENTORY_SUGGESTION',
+      notes: `Solicitud de reabastecimiento automático para ${items.length} productos bajo stock mínimo.`,
+      items: items
+    });
+
+    showToast(`Solicitud ${res.consecutive} creada exitosamente con ${items.length} productos`, 'success');
+    
+    // Switch to comparator tab and select this requisition
+    switchPurchaseTab('comparator');
+    await loadRequisitionsForDropdown(res.id);
+
+  } catch (err) {
+    showToast(`Error al crear solicitud: ${err.message}`, 'error');
+  }
+}
+
+// 2. COMPARISON MATRIX & RFQ SELECTION
+async function loadRequisitionsForDropdown(selectedId = null) {
+  const select = document.getElementById('selectRequisitionForCompare');
+  if (!select) return;
+
+  select.innerHTML = `<option value="">Cargando solicitudes...</option>`;
+
+  try {
+    const reqs = await apiClient.getPurchaseRequisitions(state.activeWarehouseId);
+    if (!reqs.length) {
+      select.innerHTML = `<option value="">No hay solicitudes de cotización activas</option>`;
+      document.getElementById('comparisonSupplierCards').innerHTML = '';
+      document.getElementById('comparisonMatrixBody').innerHTML = `<tr><td colspan="4" style="text-align:center; padding:28px;">No hay solicitudes registradas. Crea una desde la pestaña de sugerencias.</td></tr>`;
+      return;
+    }
+
+    select.innerHTML = reqs.map(r => `
+      <option value="${r.id}" ${selectedId === r.id ? 'selected' : ''}>
+        ${r.consecutive} (${r.warehouse_name} — ${r.items.length} productos | ${r.quotations_count} cotizaciones) [${r.status}]
+      </option>
+    `).join('');
+
+    loadComparisonForSelectedRequisition();
+
+  } catch (err) {
+    select.innerHTML = `<option value="">Error cargando solicitudes: ${err.message}</option>`;
+  }
+}
+
+async function loadComparisonForSelectedRequisition() {
+  const select = document.getElementById('selectRequisitionForCompare');
+  const reqId = select?.value;
+  if (!reqId) return;
+
+  const cardsContainer = document.getElementById('comparisonSupplierCards');
+  const matrixHeader = document.getElementById('comparisonMatrixHeader');
+  const matrixBody = document.getElementById('comparisonMatrixBody');
+  const itemsCountBadge = document.getElementById('comparisonItemsCountBadge');
+  const detailHeader = document.getElementById('comparisonDetailHeader');
+
+  cardsContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px;">Cargando matriz comparativa...</div>`;
+
+  try {
+    const comp = await apiClient.getQuotationComparison(reqId);
+    currentComparisonData = comp;
+
+    if (detailHeader) {
+      detailHeader.innerHTML = `
+        <div style="font-size:14px; color:#475569;">
+          <strong>Solicitud:</strong> <span style="color:#0f172a; font-weight:700;">${comp.requisition_consecutive}</span> | 
+          <strong>Sede:</strong> ${comp.warehouse_name} | 
+          <strong>Observaciones:</strong> <em>${comp.notes || 'Reabastecimiento regular'}</em>
+        </div>
+      `;
+    }
+
+    if (itemsCountBadge) itemsCountBadge.textContent = `${comp.items.length} productos`;
+
+    if (!comp.suppliers.length) {
+      cardsContainer.innerHTML = `
+        <div style="grid-column:1/-1; background:#fff; padding:30px; border-radius:8px; border:2px dashed #cbd5e1; text-align:center;">
+          <h4 style="font-size:16px; font-weight:700; color:#334155; margin-bottom:8px;">Aún no hay cotizaciones registradas para esta solicitud</h4>
+          <p style="font-size:13px; color:#64748b; margin-bottom:16px;">Haz clic en el botón "+ Ingresar Oferta de Proveedor" para cargar propuestas y activar la matriz comparativa.</p>
+          <button class="btn btn-primary" onclick="openAddQuotationModal()">+ Ingresar Oferta de Proveedor</button>
+        </div>
+      `;
+      matrixBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">Sin ofertas recibidas.</td></tr>`;
+      return;
+    }
+
+    // Render Supplier Cards
+    cardsContainer.innerHTML = comp.suppliers.map(card => {
+      let cardClass = 'quote-card';
+      let badgeHtml = '';
+
+      if (card.is_awarded) {
+        cardClass += ' awarded';
+        badgeHtml = `<span class="badge-decision recommended">✓ ADJUDICADA</span>`;
+      } else if (card.is_cheapest && card.is_fastest) {
+        cardClass += ' cheapest';
+        badgeHtml = `<span class="badge-decision best-price">🟢 MEJOR PRECIO & MÁS RÁPIDO</span>`;
+      } else if (card.is_cheapest) {
+        cardClass += ' cheapest';
+        badgeHtml = `<span class="badge-decision best-price">🟢 MEJOR PRECIO</span>`;
+      } else if (card.is_fastest) {
+        cardClass += ' fastest';
+        badgeHtml = `<span class="badge-decision fastest">🟡 ENTREGA MÁS RÁPIDA</span>`;
+      } else if (card.recommendation_badge === 'RECOMENDADO') {
+        badgeHtml = `<span class="badge-decision recommended">🔵 RECOMENDADO</span>`;
+      }
+
+      const savingsHtml = card.savings_cop > 0 
+        ? `<div class="quote-savings-chip">💰 Ahorro de ${formatCOP(card.savings_cop)} (${card.savings_pct}%)</div>`
+        : `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">Opción de mayor valor base</div>`;
+
+      const awardBtnHtml = card.is_awarded
+        ? `<button class="btn-award-quote" disabled>✓ Orden de Compra Emitida</button>`
+        : `<button class="btn-award-quote" onclick="handleAwardQuotation('${card.quotation_id}', '${card.supplier_name}')">
+            📋 Adjudicar y Generar OC Oficial
+          </button>`;
+
+      return `
+        <div class="${cardClass}">
+          <div class="quote-card-header">
+            <div>
+              <div class="quote-supplier-title">${card.supplier_name}</div>
+              <div class="quote-supplier-nit">NIT: ${card.supplier_nit}</div>
+            </div>
+            <div>${badgeHtml}</div>
+          </div>
+
+          <div class="quote-meta-row">
+            <span>Tiempo de Entrega:</span>
+            <strong>⏱️ ${card.delivery_days} ${card.delivery_days === 1 ? 'día hábil' : 'días hábiles'}</strong>
+          </div>
+
+          <div class="quote-meta-row">
+            <span>Condición de Pago:</span>
+            <strong>${card.payment_terms}</strong>
+          </div>
+
+          <div class="quote-meta-row">
+            <span>Flete / Transporte:</span>
+            <strong>${card.shipping_cost > 0 ? formatCOP(card.shipping_cost) : 'Gratis en sede'}</strong>
+          </div>
+
+          <div class="quote-total-box">
+            <div class="quote-total-label">Total Cotizado Ofertado</div>
+            <div class="quote-total-amount">${formatCOP(card.total_amount)}</div>
+            ${savingsHtml}
+          </div>
+
+          ${awardBtnHtml}
+        </div>
+      `;
+    }).join('');
+
+    // Render Matrix Table Columns
+    let headerHtml = `
+      <th>Producto</th>
+      <th>SKU</th>
+      <th>Cant. Requerida</th>
+    `;
+    comp.suppliers.forEach(s => {
+      headerHtml += `<th style="text-align:right;">${s.supplier_name}</th>`;
+    });
+    matrixHeader.innerHTML = headerHtml;
+
+    // Render Matrix Table Rows
+    matrixBody.innerHTML = comp.items.map(row => {
+      let rowHtml = `
+        <td><strong>${row.product_name}</strong></td>
+        <td><code>${row.sku}</code></td>
+        <td>${row.requested_qty} ${row.unit}</td>
+      `;
+
+      comp.suppliers.forEach(s => {
+        const price = row.prices_by_supplier[s.supplier_id] || 0.0;
+        const isBestPrice = (price > 0 && price === row.lowest_unit_price);
+        const cellClass = isBestPrice ? 'cell-best-price' : '';
+        const bestBadge = isBestPrice ? `<span class="badge-lowest-pill">Mejor</span>` : '';
+
+        rowHtml += `
+          <td class="${cellClass}" style="text-align:right;">
+            ${formatCOP(price)} ${bestBadge}
+          </td>
+        `;
+      });
+
+      return `<tr>${rowHtml}</tr>`;
+    }).join('');
+
+  } catch (err) {
+    cardsContainer.innerHTML = `<div style="grid-column:1/-1; color:#dc2626; padding:20px;">Error al generar matriz comparativa: ${err.message}</div>`;
+  }
+}
+
+// 3. ADD SUPPLIER QUOTATION MODAL
+function openAddQuotationModal() {
+  const select = document.getElementById('selectRequisitionForCompare');
+  const reqId = select?.value;
+  if (!reqId || !currentComparisonData) {
+    showToast('Selecciona primero una solicitud de compra válida', 'error');
+    return;
+  }
+
+  // Populate supplier select
+  const supSelect = document.getElementById('quoteSupplierSelect');
+  if (supSelect) {
+    supSelect.innerHTML = state.suppliers.map(s => `
+      <option value="${s.id}">${s.name} (${s.nit})</option>
+    `).join('');
+  }
+
+  // Populate line items
+  const itemsTbody = document.getElementById('quoteItemsTableBody');
+  if (itemsTbody) {
+    itemsTbody.innerHTML = currentComparisonData.items.map(item => `
+      <tr>
+        <td><strong>${item.product_name}</strong></td>
+        <td>${item.unit}</td>
+        <td>${item.requested_qty}</td>
+        <td>
+          <input type="number" class="form-input quote-unit-cost" data-product-id="${item.product_id}" data-qty="${item.requested_qty}" 
+            placeholder="Ej: 8500" min="0" step="100" style="width:160px;" required>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  openModal('modalAddQuotation');
+}
+
+async function handleSaveQuotation(e) {
+  e.preventDefault();
+  const select = document.getElementById('selectRequisitionForCompare');
+  const reqId = select?.value;
+  if (!reqId) return;
+
+  const supplierId = document.getElementById('quoteSupplierSelect')?.value;
+  const docNumber = document.getElementById('quoteDocNumber')?.value;
+  const deliveryDays = parseInt(document.getElementById('quoteDeliveryDays')?.value || '1', 10);
+  const paymentTerms = document.getElementById('quotePaymentTerms')?.value;
+  const shippingCost = parseFloat(document.getElementById('quoteShippingCost')?.value || '0');
+  const notes = document.getElementById('quoteNotes')?.value;
+
+  const items = [];
+  document.querySelectorAll('.quote-unit-cost').forEach(input => {
+    const pId = input.dataset.productId;
+    const qty = parseFloat(input.dataset.qty);
+    const unitCost = parseFloat(input.value || '0');
+    if (pId && unitCost >= 0) {
+      items.push({
+        product_id: pId,
+        quantity: qty,
+        unit_cost: unitCost
+      });
+    }
+  });
+
+  try {
+    await apiClient.addSupplierQuotation(reqId, {
+      supplier_id: supplierId,
+      quotation_number: docNumber,
+      delivery_days: deliveryDays,
+      payment_terms: paymentTerms,
+      shipping_cost: shippingCost,
+      notes: notes,
+      items: items
+    });
+
+    closeModal('modalAddQuotation');
+    showToast('Cotización registrada en la matriz comparativa exitosamente', 'success');
+    loadComparisonForSelectedRequisition();
+
+  } catch (err) {
+    showToast(`Error al guardar cotización: ${err.message}`, 'error');
+  }
+}
+
+// 4. AWARD QUOTATION AND GENERATE OFFICIAL PURCHASE ORDER
+async function handleAwardQuotation(quoteId, supplierName) {
+  if (!confirm(`¿Confirmas adjudicar esta compra a ${supplierName} y generar automáticamente la Orden de Compra Oficial (OC)?`)) {
+    return;
+  }
+
+  try {
+    const po = await apiClient.awardQuotation(quoteId);
+    showToast(`¡Orden de Compra ${po.consecutive_oc} generada exitosamente a nombre de ${po.supplier_name}!`, 'success');
+
+    // Switch to orders tab and open printable format
+    switchPurchaseTab('orders');
+    openPrintPOModal(po.id);
+
+  } catch (err) {
+    showToast(`Error al adjudicar orden de compra: ${err.message}`, 'error');
+  }
+}
+
+// 5. LIST AND RECEIVE PURCHASE ORDERS
+async function loadPurchaseOrders() {
+  const tbody = document.getElementById('purchaseOrdersTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:28px;">Cargando órdenes de compra...</td></tr>`;
+
+  try {
+    const orders = await apiClient.getPurchaseOrders();
+    if (!orders.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:28px; color:#64748b;">No hay órdenes de compra emitidas todavía.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = orders.map(po => {
+      const isReceived = po.status === 'RECEIVED';
+      const statusPill = isReceived 
+        ? `<span class="badge-pill badge-green">✓ RECIBIDA EN BODEGA</span>`
+        : `<span class="badge-pill badge-blue">⏳ EMITIDA / EN TRÁNSITO</span>`;
+
+      const receiveBtn = isReceived
+        ? `<button class="btn btn-secondary btn-sm" disabled title="Ya fue ingresada al stock">Ingresada</button>`
+        : `<button class="btn btn-primary btn-sm" onclick="handleReceivePO('${po.id}', '${po.consecutive_oc}')">📥 Recibir en Bodega</button>`;
+
+      return `
+        <tr>
+          <td><strong style="color:var(--siigo-navy);">${po.consecutive_oc}</strong></td>
+          <td>
+            <strong>${po.supplier_name}</strong>
+            <div style="font-size:11px; color:#64748b;">NIT: ${po.supplier_nit}</div>
+          </td>
+          <td>${po.warehouse_name}</td>
+          <td>${formatDate(po.order_date)}</td>
+          <td><strong>${formatDate(po.expected_delivery_date)}</strong></td>
+          <td>${po.payment_terms}</td>
+          <td style="font-weight:800; color:var(--siigo-navy);">${formatCOP(po.total_amount)}</td>
+          <td>${statusPill}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-secondary btn-sm" onclick="openPrintPOModal('${po.id}')" title="Ver formato imprimible">👁️ Ver OC</button>
+              ${receiveBtn}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#dc2626; padding:20px;">Error al cargar órdenes de compra: ${err.message}</td></tr>`;
+  }
+}
+
+async function handleReceivePO(poId, consecutive) {
+  if (!confirm(`¿Confirmas la recepción física de la mercancía de la Orden de Compra ${consecutive}?\nSe crearán los lotes trazables por política FEFO y se actualizará el costo promedio ponderado.`)) {
+    return;
+  }
+
+  try {
+    const res = await apiClient.receivePurchaseOrder(poId, {});
+    showToast(`✓ Mercancía de ${consecutive} recepcionada con éxito. Movimiento ${res.movement_consecutive} registrado.`, 'success');
+    loadPurchaseOrders();
+    // Refresh inventory and lot counts
+    loadInventory();
+  } catch (err) {
+    showToast(`Error al recepcionar orden de compra: ${err.message}`, 'error');
+  }
+}
+
+async function openPrintPOModal(poId) {
+  const sheet = document.getElementById('printPoSheet');
+  if (!sheet) return;
+
+  sheet.innerHTML = `<div style="text-align:center; padding:30px;">Cargando documento oficial de Orden de Compra...</div>`;
+  openModal('modalPrintPO');
+
+  try {
+    const po = await apiClient.getPurchaseOrderDetail(poId);
+
+    sheet.innerHTML = `
+      <div class="po-header">
+        <div>
+          <div style="font-size:20px; font-weight:900; color:var(--siigo-navy);">REFRIBREAK SAS</div>
+          <div style="font-size:12px; color:#475569;">NIT: 901.123.456-7 — Régimen Común</div>
+          <div style="font-size:12px; color:#475569;">Soluciones Empresariales de Refrigerios & Catering Corporativo</div>
+          <div style="font-size:12px; color:#475569;">Bogotá D.C., Colombia — PBX: (601) 744-1234</div>
+        </div>
+        <div class="po-title-box" style="text-align:right;">
+          <h2>ORDEN DE COMPRA</h2>
+          <span>${po.consecutive_oc}</span>
+          <div style="font-size:12px; color:#64748b; margin-top:4px;">Fecha: ${formatDate(po.order_date)}</div>
+          <div style="font-size:12px; font-weight:700; color:#15803d;">Estado: ${po.status}</div>
+        </div>
+      </div>
+
+      <div class="po-info-grid">
+        <div>
+          <strong style="color:var(--siigo-navy);">DATOS DEL PROVEEDOR</strong>
+          <div><strong>Razón Social:</strong> ${po.supplier_name}</div>
+          <div><strong>NIT:</strong> ${po.supplier_nit}</div>
+          <div><strong>Condición de Pago:</strong> ${po.payment_terms}</div>
+        </div>
+        <div>
+          <strong style="color:var(--siigo-navy);">DATOS DE ENTREGA & RECEPCIÓN</strong>
+          <div><strong>Sede / Bodega Destino:</strong> ${po.warehouse_name}</div>
+          <div><strong>Fecha Promesa Entrega:</strong> ${formatDate(po.expected_delivery_date)}</div>
+          <div><strong>Elaborada por:</strong> ${po.created_by.toUpperCase()} (Lead Engineer)</div>
+        </div>
+      </div>
+
+      <table class="po-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Descripción del Producto</th>
+            <th>Unidad</th>
+            <th style="text-align:right;">Cantidad</th>
+            <th style="text-align:right;">Valor Unitario</th>
+            <th style="text-align:right;">Total Item</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${po.items.map(it => `
+            <tr>
+              <td><code>${it.sku}</code></td>
+              <td><strong>${it.product_name}</strong></td>
+              <td>${it.unit}</td>
+              <td style="text-align:right; font-weight:700;">${it.quantity}</td>
+              <td style="text-align:right;">${formatCOP(it.unit_cost)}</td>
+              <td style="text-align:right; font-weight:700;">${formatCOP(it.total_cost)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="max-width:440px; font-size:12px; color:#475569; background:#f8fafc; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
+          <strong>Notas y Requisitos de Recepción:</strong>
+          <div>${po.notes || 'Recepción sujeta a verificación de temperatura, lote visible y fecha de vencimiento.'}</div>
+          <div style="margin-top:6px; font-size:11px; color:#94a3b8;">Documento oficial generado con política de trazabilidad FEFO y costo promedio ponderado.</div>
+        </div>
+
+        <div class="po-totals-box">
+          <div class="po-total-row">
+            <span>Subtotal Mercancía:</span>
+            <strong>${formatCOP(po.subtotal)}</strong>
+          </div>
+          <div class="po-total-row">
+            <span>Flete / Transporte:</span>
+            <strong>${formatCOP(po.shipping_cost)}</strong>
+          </div>
+          <div class="po-total-row grand">
+            <span>TOTAL ORDEN (COP):</span>
+            <span style="color:var(--siigo-navy);">${formatCOP(po.total_amount)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:50px; padding-top:10px;">
+        <div style="border-top:1px solid #334155; text-align:center; font-size:12px; padding-top:6px;">
+          <strong>Firma Autorizada / Compras</strong><br>
+          Refribreak SAS
+        </div>
+        <div style="border-top:1px solid #334155; text-align:center; font-size:12px; padding-top:6px;">
+          <strong>Aceptado / Proveedor</strong><br>
+          ${po.supplier_name}
+        </div>
+      </div>
+    `;
+
+  } catch (err) {
+    sheet.innerHTML = `<div style="color:#dc2626; padding:30px;">Error al cargar la orden de compra: ${err.message}</div>`;
+  }
 }
 

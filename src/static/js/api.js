@@ -115,5 +115,47 @@ const apiClient = {
 
   simulateAiExtraction(rawText, supplierHint) {
     return this.post('/ai/simulate-extract', { raw_text: rawText, supplier_hint: supplierHint });
+  },
+
+  // --- Procurement & Comparison API Methods ---
+  getReplenishmentSuggestions(warehouseId) {
+    return this.get('/purchases/replenishment-suggestions', { warehouse_id: warehouseId });
+  },
+
+  createPurchaseRequisition(data) {
+    return this.post('/purchases/requisitions', data);
+  },
+
+  getPurchaseRequisitions(warehouseId, status) {
+    return this.get('/purchases/requisitions', { warehouse_id: warehouseId, status: status });
+  },
+
+  getPurchaseRequisitionDetail(reqId) {
+    return this.get(`/purchases/requisitions/${reqId}`);
+  },
+
+  addSupplierQuotation(reqId, data) {
+    return this.post(`/purchases/requisitions/${reqId}/quotations`, data);
+  },
+
+  getQuotationComparison(reqId) {
+    return this.get(`/purchases/requisitions/${reqId}/compare`);
+  },
+
+  awardQuotation(quoteId, notes) {
+    const endpoint = notes ? `/purchases/quotations/${quoteId}/award?notes=${encodeURIComponent(notes)}` : `/purchases/quotations/${quoteId}/award`;
+    return this.post(endpoint, {});
+  },
+
+  getPurchaseOrders(status) {
+    return this.get('/purchases/orders', { status: status });
+  },
+
+  getPurchaseOrderDetail(poId) {
+    return this.get(`/purchases/orders/${poId}`);
+  },
+
+  receivePurchaseOrder(poId, data = {}) {
+    return this.post(`/purchases/orders/${poId}/receive`, data);
   }
 };

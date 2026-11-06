@@ -38,3 +38,19 @@
 - **No verificado:** Impresión física en hardware de impresora de bodega `[?]`.
 - **Pendiente / siguiente:** Demostración al cliente y recopilación de retroalimentación en la semana del 2 al 6 de noviembre de 2026.
 
+## 2026-11-05 19:00 — Módulo de Compras, Comparador de Ofertas Multicriterio y Reabastecimiento Inteligente ([Dev: diego])
+- **Tipo:** decisión | arquitectura | entrega funcional
+- **Contexto:** El cliente solicitó gestionar órdenes de compra a proveedores, comparar cotizaciones lado a lado para elegir la mejor opción según precio y tiempo de entrega, y calcular las cantidades necesarias basándose en los niveles de inventario y stock mínimo.
+- **Decisión / causa raíz:**
+  1. **Motor de Reabastecimiento Inteligente:** Cálculo automático de faltantes según fórmula: $\text{Déficit} = \max(0, \text{Stock Mínimo} - \text{Disponible} + \text{Reservado})$. Clasificación de urgencia en Crítico (agotado), Bajo Stock y Normal.
+  2. **Persistencia SQLite WAL:** Incorporación de 6 tablas normalizadas: `purchase_requisitions`, `purchase_requisition_items`, `supplier_quotations`, `supplier_quotation_items`, `purchase_orders`, `purchase_order_items`.
+  3. **Matriz Comparativa Multicriterio:** Motor analítico que contrasta precios por ítem, subtotal, flete, días de entrega y calcula el ahorro en COP y porcentaje vs la opción más costosa. Asigna insignias de decisión (🟢 Mejor Precio, 🟡 Entrega más Rápida, 🔵 Recomendado).
+  4. **Adjudicación y Trazabilidad:** Adjudicación atómica de la cotización ganadora con generación automática de la Orden de Compra oficial (`OC-YYYY-XXXX`) y recepción física en bodega con asignación de lotes FEFO y recálculo bancario de costo promedio ponderado.
+  5. **Interfaz SPA Vanilla:** Nueva vista `view-purchases` con 3 sub-pestañas: Sugerencias de Stock, Comparador de Cotizaciones y Órdenes de Compra, tarjeta visual de proveedores, resaltado de celdas con mejor precio y vista imprimible de OC.
+- **Alternativas descartadas:** Creación manual no vinculada al inventario (descartada porque generaría sobrecostos o compras ciegas desconectadas del stock real).
+- **Consecuencias:** Capacidad de comparar cotizaciones en tiempo real, reducción de costos por selección de mejor proveedor y trazabilidad directa desde la cotización hasta el lote en almacén.
+- **Evidencia:** 10 pruebas automatizadas en verde (`pytest -v`), compilación limpia (`compileall`), servidor Uvicorn activo en `http://127.0.0.1:8000/`.
+- **No verificado:** Envío automático por correo SMTP de la orden de compra en formato PDF al proveedor `[?]`.
+- **Pendiente / siguiente:** Validación de la experiencia de usuario con el equipo de compras de Refribreak.
+
+

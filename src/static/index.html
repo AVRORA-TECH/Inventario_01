@@ -29,7 +29,12 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
         </a>
 
-        <!-- 3. Órdenes de Entrega (OE) -->
+        <!-- 3. Compras, Cotizaciones & Comparador -->
+        <a class="nav-item" data-view="purchases" id="nav-purchases" data-tooltip="Compras, Cotizaciones & Comparador">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        </a>
+
+        <!-- 4. Órdenes de Entrega (OE) -->
         <a class="nav-item" data-view="orders" id="nav-orders" data-tooltip="Órdenes de Entrega (OE)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
         </a>
@@ -153,6 +158,15 @@
                   <span class="action-pill-badge">Nuevo</span>
                 </div>
                 <span class="action-label">Crear Orden de Entrega (OE)</span>
+              </div>
+
+              <!-- Action: Cotizar & Comparar Proveedores (Highlighted) -->
+              <div class="siigo-action-card" onclick="switchView('purchases'); switchPurchaseTab('comparator')">
+                <div class="action-circle-wrapper">
+                  <div class="action-circle highlight" style="background:#10b981; color:white;">⚖️</div>
+                  <span class="action-pill-badge" style="background:#059669;">Cotizar</span>
+                </div>
+                <span class="action-label">Comparar Proveedores & OC</span>
               </div>
 
               <!-- Action 3: Despacho FEFO -->
@@ -485,6 +499,176 @@
                   <tr><td colspan="5" style="text-align:center; padding:28px;">Cargando bitácora de auditoría...</td></tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        <!-- =========================================================================
+             7. PROCUREMENT & SUPPLIER COMPARISON VIEW
+             ========================================================================= -->
+        <section id="view-purchases" class="view-panel">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+            <div>
+              <h2 style="font-size:22px; font-weight:800; color:var(--text-main);">Gestión de Compras, Cotizaciones y Reabastecimiento</h2>
+              <p style="font-size:13px; color:#627488; margin-top:3px;">
+                Análisis de faltantes según stock mínimo de inventario, matriz comparativa de ofertas y emisión de Órdenes de Compra (OC).
+              </p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-secondary btn-sm" onclick="loadReplenishmentSuggestions()">🔄 Recalcular Inventario</button>
+              <button class="btn btn-primary btn-sm" onclick="switchPurchaseTab('comparator')">⚖️ Ver Comparativa Activa</button>
+            </div>
+          </div>
+
+          <!-- Sub-tabs navigation bar -->
+          <div class="subtabs-bar">
+            <button class="subtab-btn active" id="btnTabSuggestions" onclick="switchPurchaseTab('suggestions')">
+              📦 Sugerencias de Reabastecimiento
+              <span class="badge-pill badge-danger" id="badgeSuggestionsCount" style="display:none; font-size:10px;">0</span>
+            </button>
+            <button class="subtab-btn" id="btnTabComparator" onclick="switchPurchaseTab('comparator')">
+              ⚖️ Comparador de Cotizaciones (Matriz)
+            </button>
+            <button class="subtab-btn" id="btnTabOrders" onclick="switchPurchaseTab('orders')">
+              📑 Órdenes de Compra Emitidas (OC)
+            </button>
+          </div>
+
+          <!-- TAB 1: SUGERENCIAS SEGÚN INVENTARIO -->
+          <div id="subtabSuggestions" class="subtab-content active">
+            <div class="metrics-grid" style="margin-bottom:18px;">
+              <div class="metric-card danger">
+                <span class="metric-title">Productos Críticos (Agotados)</span>
+                <span class="metric-value" id="suggCritCount">0</span>
+                <span class="metric-trend negative">Reabastecimiento urgente</span>
+              </div>
+              <div class="metric-card warning">
+                <span class="metric-title">Bajo Stock Mínimo</span>
+                <span class="metric-value" id="suggLowCount">0</span>
+                <span class="metric-trend warning">En punto de reorden</span>
+              </div>
+              <div class="metric-card success">
+                <span class="metric-title">Presupuesto Estimado Faltantes</span>
+                <span class="metric-value" id="suggTotalCost">$0</span>
+                <span class="metric-trend positive">Valoración sugerida en COP</span>
+              </div>
+            </div>
+
+            <div class="card-table-container">
+              <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:13px; color:#475569; font-weight:600;">
+                  <span>Insumos y materias primas calculados automáticamente según inventario en bodega</span>
+                </div>
+                <div>
+                  <button class="btn btn-siigo-create btn-sm" onclick="createRequisitionFromSelectedSuggestions()">
+                    + Crear Solicitud de Cotización (RFQ) con Seleccionados
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th width="30"><input type="checkbox" id="checkAllSuggestions" onchange="toggleSelectAllSuggestions(this.checked)"></th>
+                      <th>Producto</th>
+                      <th>SKU</th>
+                      <th>Categoría</th>
+                      <th>Bodega</th>
+                      <th>Stock Actual</th>
+                      <th>Stock Mínimo</th>
+                      <th>Déficit</th>
+                      <th>Cantidad Sugerida</th>
+                      <th>Costo Est. Unit.</th>
+                      <th>Subtotal Est.</th>
+                      <th>Urgencia</th>
+                    </tr>
+                  </thead>
+                  <tbody id="suggestionsTableBody">
+                    <tr><td colspan="12" style="text-align:center; padding:28px;">Analizando niveles de inventario...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: COMPARADOR DE COTIZACIONES (MATRIZ) -->
+          <div id="subtabComparator" class="subtab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:14px 18px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:20px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <label style="font-size:13px; font-weight:700; color:#334155;">Seleccionar Solicitud (RFQ):</label>
+                <select id="selectRequisitionForCompare" class="form-select" style="min-width:320px; font-weight:600;" onchange="loadComparisonForSelectedRequisition()">
+                  <option value="">Cargando solicitudes...</option>
+                </select>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-primary btn-sm" onclick="openAddQuotationModal()">
+                  + Ingresar Oferta de Proveedor
+                </button>
+              </div>
+            </div>
+
+            <div id="comparisonDetailHeader" style="margin-bottom:16px;"></div>
+
+            <!-- Supplier Comparison Cards Grid -->
+            <div class="comparison-cards-grid" id="comparisonSupplierCards">
+              <!-- Renderizado dinámicamente -->
+            </div>
+
+            <!-- Side-by-side Matrix Table by Product Item -->
+            <div class="card-table-container">
+              <div class="table-toolbar">
+                <h4 style="font-size:15px; font-weight:700; color:#0f172a;">Detalle Comparativo de Precios por Producto</h4>
+                <span class="badge-pill badge-gray" id="comparisonItemsCountBadge">0 ítems</span>
+              </div>
+              <div class="table-responsive">
+                <table class="custom-table table-matrix" id="comparisonMatrixTable">
+                  <thead>
+                    <tr id="comparisonMatrixHeader">
+                      <th>Producto</th>
+                      <th>SKU</th>
+                      <th>Cant. Solicitada</th>
+                    </tr>
+                  </thead>
+                  <tbody id="comparisonMatrixBody">
+                    <tr><td colspan="4" style="text-align:center; padding:28px;">Selecciona una solicitud para ver la comparativa.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: ÓRDENES DE COMPRA (OC) -->
+          <div id="subtabOrders" class="subtab-content">
+            <div class="card-table-container">
+              <div class="table-toolbar" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h4 style="font-size:15px; font-weight:700; color:#0f172a;">Órdenes de Compra Oficiales Emitidas a Proveedores</h4>
+                  <p style="font-size:12px; color:#64748b;">Generadas automáticamente tras la adjudicación de cotizaciones</p>
+                </div>
+                <div>
+                  <button class="btn btn-secondary btn-sm" onclick="loadPurchaseOrders()">🔄 Actualizar Listado</button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Consecutivo OC</th>
+                      <th>Proveedor</th>
+                      <th>Sede Entrega</th>
+                      <th>Fecha Emisión</th>
+                      <th>Fecha Estimada</th>
+                      <th>Plazo Pago</th>
+                      <th>Total COP</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="purchaseOrdersTableBody">
+                    <tr><td colspan="9" style="text-align:center; padding:28px;">Cargando órdenes de compra...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </section>
@@ -836,6 +1020,108 @@
       <div class="modal-footer no-print">
         <button type="button" class="btn btn-secondary" onclick="closeModal('modalPrintOE')">Cerrar</button>
         <button type="button" class="btn btn-siigo-create" onclick="window.print()">🖨️ Imprimir Formato</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: AGREGAR COTIZACIÓN DE PROVEEDOR
+       ========================================================================= -->
+  <div id="modalAddQuotation" class="modal-backdrop">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <h3>Registrar Cotización / Oferta de Proveedor</h3>
+        <button class="modal-close-btn" onclick="closeModal('modalAddQuotation')">&times;</button>
+      </div>
+      <form id="formAddQuotation">
+        <div class="modal-body">
+          <p style="font-size:13px; color:#64748b; margin-bottom:16px;">
+            Ingresa los precios unitarios y condiciones de entrega ofrecidas por el proveedor para contrastar en la matriz comparativa.
+          </p>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Proveedor</label>
+              <select id="quoteSupplierSelect" class="form-select" required></select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">No. Cotización Soporte</label>
+              <input type="text" id="quoteDocNumber" class="form-input" placeholder="Ej: COT-2026-991">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tiempo de Entrega (Días hábiles)</label>
+              <input type="number" id="quoteDeliveryDays" class="form-input" min="1" value="2" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Condición de Pago</label>
+              <select id="quotePaymentTerms" class="form-select">
+                <option value="Contado contra entrega">Contado contra entrega</option>
+                <option value="Crédito 15 días" selected>Crédito 15 días</option>
+                <option value="Crédito 30 días">Crédito 30 días</option>
+                <option value="Anticipado 50% / 50%">Anticipado 50% / 50%</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Costo de Envío / Flete (COP)</label>
+              <input type="number" id="quoteShippingCost" class="form-input" min="0" step="1000" value="0">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Notas u Observaciones</label>
+              <input type="text" id="quoteNotes" class="form-input" placeholder="Descuento aplicado, validez de la oferta...">
+            </div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <h5 style="font-size:14px; font-weight:700; margin-bottom:10px; color:#0f172a;">Precios Unitarios por Producto:</h5>
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Unidad</th>
+                    <th>Cantidad Requerida</th>
+                    <th>Precio Unitario Ofertado (COP)</th>
+                  </tr>
+                </thead>
+                <tbody id="quoteItemsTableBody">
+                  <tr><td colspan="4" style="text-align:center;">Cargando ítems de la solicitud...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalAddQuotation')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cotización en el Comparador</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: FORMATO OFICIAL IMPRIMIBLE DE ORDEN DE COMPRA (OC)
+       ========================================================================= -->
+  <div id="modalPrintPO" class="modal-backdrop">
+    <div class="modal-box modal-large" style="max-width:880px;">
+      <div class="modal-header no-print">
+        <h3>Orden de Compra Oficial (Refribreak SAS)</h3>
+        <button class="modal-close-btn" onclick="closeModal('modalPrintPO')">&times;</button>
+      </div>
+      <div class="modal-body" style="background:#f1f5f9; padding:20px;">
+        
+        <div class="po-document-sheet" id="printPoSheet">
+          <!-- Renderizado dinámicamente -->
+        </div>
+
+      </div>
+      <div class="modal-footer no-print">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalPrintPO')">Cerrar</button>
+        <button type="button" class="btn btn-siigo-create" onclick="window.print()">🖨️ Imprimir Orden de Compra</button>
       </div>
     </div>
   </div>

@@ -225,10 +225,119 @@ def init_db() -> None:
         );
         """)
 
+        # 12. Purchase Requisitions (Solicitudes de Reabastecimiento/Compra)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_requisitions (
+            id TEXT PRIMARY KEY,
+            consecutive TEXT NOT NULL UNIQUE,
+            warehouse_id TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'DRAFT', -- 'DRAFT', 'QUOTING', 'AWARDED', 'CANCELLED'
+            origin TEXT NOT NULL DEFAULT 'INVENTORY_SUGGESTION', -- 'INVENTORY_SUGGESTION', 'MANUAL'
+            notes TEXT,
+            created_by TEXT NOT NULL DEFAULT 'diego',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (warehouse_id) REFERENCES warehouses (id)
+        );
+        """)
+
+        # 13. Purchase Requisition Items
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_requisition_items (
+            id TEXT PRIMARY KEY,
+            requisition_id TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            current_stock REAL NOT NULL DEFAULT 0.0,
+            min_stock REAL NOT NULL DEFAULT 0.0,
+            requested_qty REAL NOT NULL,
+            estimated_unit_cost REAL NOT NULL DEFAULT 0.0,
+            FOREIGN KEY (requisition_id) REFERENCES purchase_requisitions (id),
+            FOREIGN KEY (product_id) REFERENCES products (id)
+        );
+        """)
+
+        # 14. Supplier Quotations (Cotizaciones por Proveedor)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS supplier_quotations (
+            id TEXT PRIMARY KEY,
+            requisition_id TEXT NOT NULL,
+            supplier_id TEXT NOT NULL,
+            quotation_number TEXT,
+            delivery_days INTEGER NOT NULL DEFAULT 1,
+            payment_terms TEXT NOT NULL DEFAULT 'Contado',
+            shipping_cost REAL NOT NULL DEFAULT 0.0,
+            total_amount REAL NOT NULL DEFAULT 0.0,
+            is_awarded INTEGER NOT NULL DEFAULT 0,
+            notes TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (requisition_id) REFERENCES purchase_requisitions (id),
+            FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
+        );
+        """)
+
+        # 15. Supplier Quotation Items
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS supplier_quotation_items (
+            id TEXT PRIMARY KEY,
+            quotation_id TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            unit_cost REAL NOT NULL,
+            total_cost REAL NOT NULL,
+            FOREIGN KEY (quotation_id) REFERENCES supplier_quotations (id),
+            FOREIGN KEY (product_id) REFERENCES products (id)
+        );
+        """)
+
+        # 16. Purchase Orders (Órdenes de Compra Oficiales)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_orders (
+            id TEXT PRIMARY KEY,
+            consecutive_oc TEXT NOT NULL UNIQUE,
+            requisition_id TEXT,
+            quotation_id TEXT,
+            supplier_id TEXT NOT NULL,
+            warehouse_id TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'ISSUED', -- 'ISSUED', 'IN_TRANSIT', 'RECEIVED', 'CANCELLED'
+            order_date TEXT NOT NULL,
+            expected_delivery_date TEXT NOT NULL,
+            payment_terms TEXT NOT NULL DEFAULT 'Contado',
+            subtotal REAL NOT NULL DEFAULT 0.0,
+            shipping_cost REAL NOT NULL DEFAULT 0.0,
+            total_amount REAL NOT NULL DEFAULT 0.0,
+            notes TEXT,
+            created_by TEXT NOT NULL DEFAULT 'diego',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (requisition_id) REFERENCES purchase_requisitions (id),
+            FOREIGN KEY (quotation_id) REFERENCES supplier_quotations (id),
+            FOREIGN KEY (supplier_id) REFERENCES suppliers (id),
+            FOREIGN KEY (warehouse_id) REFERENCES warehouses (id)
+        );
+        """)
+
+        # 17. Purchase Order Items
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS purchase_order_items (
+            id TEXT PRIMARY KEY,
+            purchase_order_id TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            unit_cost REAL NOT NULL,
+            total_cost REAL NOT NULL,
+            received_qty REAL NOT NULL DEFAULT 0.0,
+            FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders (id),
+            FOREIGN KEY (product_id) REFERENCES products (id)
+        );
+        """)
+
         # Seed initial data if warehouses table is empty
         cur.execute("SELECT COUNT(*) FROM warehouses;")
         if cur.fetchone()[0] == 0:
             seed_initial_data(cur)
+
+        # Seed procurement comparison sample if empty
+        cur.execute("SELECT COUNT(*) FROM purchase_requisitions;")
+        if cur.fetchone()[0] == 0:
+            seed_purchase_comparison_sample(cur)
 
 
 def seed_initial_data(cur: sqlite3.Cursor) -> None:
@@ -410,3 +519,107 @@ def seed_initial_data(cur: sqlite3.Cursor) -> None:
         "all",
         '{"action": "Initial data seed", "version": "1.0", "status": "OK"}'
     ))
+
+
+def seed_purchase_comparison_sample(cur: sqlite3.Cursor) -> None:
+    """Seeds baseline procurement requisition, competing quotes, and comparative matrix."""
+    now_iso = datetime.now().isoformat()
+    today = date.today()
+
+    # 1. Requisition for low stock / reabastecimiento
+    req_id = "req-sample-01"
+    cur.execute("""
+    INSERT OR IGNORE INTO purchase_requisitions (id, consecutive, warehouse_id, status, origin, notes, created_by, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    """, (
+        req_id,
+        "REQ-2026-0001",
+        "wh-bog-central",
+        "QUOTING",
+        "INVENTORY_SUGGESTION",
+        "Reabastecimiento preventivo de insumos para desayunos y refrigerios corporativos semanales",
+        "diego",
+        now_iso
+    ))
+
+    req_items = [
+        ("req-item-01", req_id, "prod-jamon", 35.0, 10.0, 20.0, 26000.0),
+        ("req-item-02", req_id, "prod-queso", 42.0, 10.0, 25.0, 22000.0),
+        ("req-item-03", req_id, "prod-tortilla", 52.0, 15.0, 30.0, 9500.0),
+    ]
+    cur.executemany("INSERT OR IGNORE INTO purchase_requisition_items VALUES (?, ?, ?, ?, ?, ?, ?);", req_items)
+
+    # 2. Quotation 1 (Andina: Mejor Precio, flete gratis, entrega en 2 días)
+    q1_id = "quote-sample-andina"
+    cur.execute("""
+    INSERT OR IGNORE INTO supplier_quotations (id, requisition_id, supplier_id, quotation_number, delivery_days, payment_terms, shipping_cost, total_amount, is_awarded, notes, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    """, (
+        q1_id,
+        req_id,
+        "sup-andina",
+        "COT-AND-4412",
+        2,
+        "Crédito 15 días",
+        0.0,
+        1324000.0,
+        0,
+        "Precios con descuento por volumen. Flete gratis en Bogotá.",
+        now_iso
+    ))
+    q1_items = [
+        ("q1-it-01", q1_id, "prod-jamon", 20.0, 25000.0, 500000.0),
+        ("q1-it-02", q1_id, "prod-queso", 25.0, 21200.0, 530000.0),
+        ("q1-it-03", q1_id, "prod-tortilla", 30.0, 9800.0, 294000.0),
+    ]
+    cur.executemany("INSERT OR IGNORE INTO supplier_quotation_items VALUES (?, ?, ?, ?, ?, ?);", q1_items)
+
+    # 3. Quotation 2 (Empaques: Entrega express en 1 día, mejor precio en tortilla)
+    q2_id = "quote-sample-empaques"
+    cur.execute("""
+    INSERT OR IGNORE INTO supplier_quotations (id, requisition_id, supplier_id, quotation_number, delivery_days, payment_terms, shipping_cost, total_amount, is_awarded, notes, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    """, (
+        q2_id,
+        req_id,
+        "sup-empaques",
+        "COT-EMP-8821",
+        1,
+        "Contado contra entrega",
+        25000.0,
+        1393500.0,
+        0,
+        "Despacho exprés prioritario en 24h. Recargo de flete.",
+        now_iso
+    ))
+    q2_items = [
+        ("q2-it-01", q2_id, "prod-jamon", 20.0, 26500.0, 530000.0),
+        ("q2-it-02", q2_id, "prod-queso", 25.0, 22500.0, 562500.0),
+        ("q2-it-03", q2_id, "prod-tortilla", 30.0, 9200.0, 276000.0),
+    ]
+    cur.executemany("INSERT OR IGNORE INTO supplier_quotation_items VALUES (?, ?, ?, ?, ?, ?);", q2_items)
+
+    # 4. Quotation 3 (Sabana: Plazo amplio 30 días, entrega en 3 días)
+    q3_id = "quote-sample-sabana"
+    cur.execute("""
+    INSERT OR IGNORE INTO supplier_quotations (id, requisition_id, supplier_id, quotation_number, delivery_days, payment_terms, shipping_cost, total_amount, is_awarded, notes, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    """, (
+        q3_id,
+        req_id,
+        "sup-sabana",
+        "COT-SAB-1092",
+        3,
+        "Crédito 30 días",
+        15000.0,
+        1418000.0,
+        0,
+        "Línea de crédito aprobada a 30 días.",
+        now_iso
+    ))
+    q3_items = [
+        ("q3-it-01", q3_id, "prod-jamon", 20.0, 27000.0, 540000.0),
+        ("q3-it-02", q3_id, "prod-queso", 25.0, 23000.0, 575000.0),
+        ("q3-it-03", q3_id, "prod-tortilla", 30.0, 9600.0, 288000.0),
+    ]
+    cur.executemany("INSERT OR IGNORE INTO supplier_quotation_items VALUES (?, ?, ?, ?, ?, ?);", q3_items)
