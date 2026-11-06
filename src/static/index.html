@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/styles.css?v=20261105d">
 </head>
 <body>
 
@@ -20,38 +20,38 @@
 
       <nav class="sidebar-nav">
         <!-- 1. Dashboard / Inicio -->
-        <a class="nav-item active" data-view="dashboard" id="nav-dashboard" data-tooltip="Inicio / Dashboard">
+        <a class="nav-item active" data-view="dashboard" id="nav-dashboard" title="Inicio / Dashboard (Alt+1)" data-tooltip="Inicio / Dashboard">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         </a>
 
         <!-- 2. Inventario Core -->
-        <a class="nav-item" data-view="inventory" id="nav-inventory" data-tooltip="Inventario y Catálogo">
+        <a class="nav-item" data-view="inventory" id="nav-inventory" title="Inventario y Catálogo de Productos (Alt+2)" data-tooltip="Inventario y Catálogo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
         </a>
 
         <!-- 3. Compras, Cotizaciones & Comparador -->
-        <a class="nav-item" data-view="purchases" id="nav-purchases" data-tooltip="Compras, Cotizaciones & Comparador">
+        <a class="nav-item" data-view="purchases" id="nav-purchases" title="Compras, Cotizaciones & Comparador de Proveedores (Alt+3)" data-tooltip="Compras & Comparador">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
         </a>
 
         <!-- 4. Órdenes de Entrega (OE) -->
-        <a class="nav-item" data-view="orders" id="nav-orders" data-tooltip="Órdenes de Entrega (OE)">
+        <a class="nav-item" data-view="orders" id="nav-orders" title="Órdenes de Entrega y Despacho OE (Alt+4)" data-tooltip="Órdenes de Entrega (OE)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
         </a>
 
-        <!-- 4. Lotes & FEFO -->
-        <a class="nav-item" data-view="lots" id="nav-lots" data-tooltip="Lotes y Vencimientos FEFO">
+        <!-- 5. Lotes & FEFO -->
+        <a class="nav-item" data-view="lots" id="nav-lots" title="Control de Lotes y Vencimientos FEFO (Alt+5)" data-tooltip="Lotes y Vencimientos FEFO">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           <span class="nav-badge" id="navAlertBadge" style="display:none;">0</span>
         </a>
 
-        <!-- 5. Kardex y Movimientos -->
-        <a class="nav-item" data-view="kardex" id="nav-kardex" data-tooltip="Kardex de Movimientos">
+        <!-- 6. Kardex y Movimientos -->
+        <a class="nav-item" data-view="kardex" id="nav-kardex" title="Kardex de Movimientos Inmutable (Alt+6)" data-tooltip="Kardex de Movimientos">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
         </a>
 
-        <!-- 6. Bitácora de Auditoría -->
-        <a class="nav-item" data-view="audit" id="nav-audit" data-tooltip="Bitácora de Auditoría">
+        <!-- 7. Bitácora de Auditoría -->
+        <a class="nav-item" data-view="audit" id="nav-audit" title="Bitácora de Auditoría del Sistema (Alt+7)" data-tooltip="Bitácora de Auditoría">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
         </a>
       </nav>
@@ -101,12 +101,23 @@
             Ayuda ▾
           </button>
 
+          <!-- Direct Top Button: Comparador Proveedores -->
+          <button class="btn-top-comparator" onclick="switchView('purchases'); switchPurchaseTab('comparator')" title="Abrir Comparador de Ofertas de Proveedores">
+            <span>⚖️</span> <strong>Comparador Proveedores</strong>
+          </button>
+
           <!-- Green + Crear Button (Siigo Signature) with Dropdown -->
           <div class="create-dropdown-wrapper">
             <button class="btn-siigo-create" id="btnToggleCreateMenu">
               <span>+</span> Crear
             </button>
             <div class="create-menu-dropdown" id="createMenuDropdown">
+              <a class="create-menu-item" onclick="closeCreateMenu(); switchView('purchases'); switchPurchaseTab('comparator')">
+                <span>⚖️</span> Comparador de Proveedores & Cotizaciones
+              </a>
+              <a class="create-menu-item" onclick="closeCreateMenu(); switchView('purchases'); switchPurchaseTab('suggestions')">
+                <span>📊</span> Sugerencias de Reabastecimiento
+              </a>
               <a class="create-menu-item" onclick="closeCreateMenu(); openModal('modalPurchaseEntry')">
                 <span>📥</span> Entrada por Compra
               </a>
@@ -364,7 +375,118 @@
         </section>
 
         <!-- =========================================================================
-             3. ORDERS VIEW (OE)
+             3. PURCHASES, QUOTATIONS & COMPARATOR VIEW
+             ========================================================================= -->
+        <section id="view-purchases" class="view-panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h2 style="font-size:20px; font-weight:700;">Compras, Cotizaciones &amp; Comparador</h2>
+              <p style="font-size:13px; color:#627488;">Gestiona solicitudes de compra, compara ofertas de proveedores y emite órdenes de compra con trazabilidad FEFO</p>
+            </div>
+          </div>
+
+          <!-- Sub-tabs Navigation -->
+          <div class="sub-tabs" id="purchaseSubTabs" style="display:flex; gap:4px; margin-bottom:20px; background:#f1f5f9; border-radius:10px; padding:4px; width:fit-content;">
+            <button class="sub-tab-btn active" id="tab-suggestions" onclick="switchPurchaseTab('suggestions')">
+              📊 Sugerencias de Stock
+            </button>
+            <button class="sub-tab-btn" id="tab-comparator" onclick="switchPurchaseTab('comparator')">
+              ⚖️ Comparador de Cotizaciones
+            </button>
+            <button class="sub-tab-btn" id="tab-purchase-orders" onclick="switchPurchaseTab('purchase-orders')">
+              📄 Órdenes de Compra
+            </button>
+          </div>
+
+          <!-- ---- TAB 1: REPLENISHMENT SUGGESTIONS ---- -->
+          <div id="pane-suggestions" class="purchase-pane active">
+            <div class="card-table-container">
+              <div class="table-toolbar">
+                <strong>Productos que requieren reabastecimiento</strong>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <select id="suggWarehouseFilter" class="filter-select" onchange="loadReplenishmentSuggestions()">
+                    <option value="">Todas las sedes</option>
+                  </select>
+                  <button class="btn btn-primary btn-sm" onclick="openCreateRFQFromSuggestions()">
+                    + Crear Solicitud de Compra
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="loadReplenishmentSuggestions()">↺ Actualizar</button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th width="30"><input type="checkbox" id="chkSelectAllSugg" onchange="toggleSelectAllSuggestions(this)"></th>
+                      <th>Producto</th>
+                      <th>Categoría</th>
+                      <th>Sede</th>
+                      <th>Disponible</th>
+                      <th>Stock Mínimo</th>
+                      <th>Déficit</th>
+                      <th>Sugerido a Pedir</th>
+                      <th>Costo Est. Total</th>
+                      <th>Urgencia</th>
+                    </tr>
+                  </thead>
+                  <tbody id="suggestionsTableBody">
+                    <tr><td colspan="10" style="text-align:center; padding:28px; color:#94a3b8;">Cargando sugerencias...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- TAB 2: QUOTATION COMPARATOR ---- -->
+          <div id="pane-comparator" class="purchase-pane" style="display:none;">
+            <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
+              <select id="rfqSelectForComparison" class="filter-select" style="min-width:300px;" onchange="loadComparisonMatrix()">
+                <option value="">— Selecciona una Solicitud de Compra (RFQ) —</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="openAddQuotationModal()">+ Agregar Cotización de Proveedor</button>
+              <button class="btn btn-secondary btn-sm" onclick="loadRFQList()">↺ Refrescar</button>
+            </div>
+
+            <!-- Comparison matrix container -->
+            <div id="comparisonMatrixContainer">
+              <div style="text-align:center; padding:60px; color:#94a3b8;">
+                <div style="font-size:48px; margin-bottom:12px;">⚖️</div>
+                <p style="font-size:15px; font-weight:600; color:#475569;">Selecciona una solicitud de compra para ver el comparador</p>
+                <p style="font-size:13px;">Agrega cotizaciones de distintos proveedores y el sistema calculará automáticamente la mejor opción</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- TAB 3: PURCHASE ORDERS ---- -->
+          <div id="pane-purchase-orders" class="purchase-pane" style="display:none;">
+            <div class="card-table-container">
+              <div class="table-toolbar">
+                <strong>Órdenes de Compra Emitidas</strong>
+                <button class="btn btn-secondary btn-sm" onclick="loadPurchaseOrders()">↺ Actualizar</button>
+              </div>
+              <div class="table-responsive">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>N° Orden</th>
+                      <th>Proveedor</th>
+                      <th>Fecha Emisión</th>
+                      <th>Total (COP)</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="purchaseOrdersTableBody">
+                    <tr><td colspan="6" style="text-align:center; padding:28px; color:#94a3b8;">Cargando órdenes de compra...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =========================================================================
+             4. ORDERS VIEW (OE)
              ========================================================================= -->
         <section id="view-orders" class="view-panel">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -954,7 +1076,7 @@
               <td><strong>Transportador:</strong></td>
               <td id="printOeTransporter">Carlos Rodríguez</td>
               <td><strong>Persona que recibe:</strong></td>
-              <td class="oe-highlight-green" id="printOeReceivedBy">Leonardo Ramírez • Tel: <span id="printOePhone">3504163975</span></td>
+              <td class="oe-highlight-green"><span id="printOeReceivedBy">Leonardo Ramírez</span> • Tel: <span id="printOePhone">3504163975</span></td>
             </tr>
             <tr>
               <td><strong>Hora de Salida:</strong></td>
@@ -1130,7 +1252,7 @@
   <div id="toastContainer" class="toast-container"></div>
 
   <!-- JavaScript Modules -->
-  <script src="/static/js/api.js"></script>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/api.js?v=20261105d"></script>
+  <script src="/static/js/app.js?v=20261105d"></script>
 </body>
 </html>

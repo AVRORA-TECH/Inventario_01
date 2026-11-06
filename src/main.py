@@ -54,7 +54,14 @@ def serve_index():
     """Serves the Vanilla single page web app."""
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        return FileResponse(index_file)
+        return FileResponse(
+            index_file,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
     return {"message": "Refribreak Inventory Core (RIC) API is running. Access /docs for API schema."}
 
 
